@@ -358,7 +358,7 @@ class VehicleManualAgent:
         
         return workflow.compile()
     
-    def query(self, user_query: str) -> str:
+    def query(self, user_query: str, callbacks=None) -> str:
         """사용자 쿼리 처리"""
         try:
             graph = self.create_graph()
@@ -377,8 +377,13 @@ class VehicleManualAgent:
                 "need_clarification": False
             }
             
+            # 콜백이 있으면 설정에 포함
+            config = {}
+            if callbacks:
+                config["callbacks"] = callbacks
+            
             # 그래프 실행
-            result = graph.invoke(initial_state)
+            result = graph.invoke(initial_state, config=config)
             
             return result.get("final_answer", "답변을 생성할 수 없습니다.")
             
