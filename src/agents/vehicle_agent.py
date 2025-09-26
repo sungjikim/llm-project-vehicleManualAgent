@@ -18,6 +18,7 @@ from ..retrievers.hybrid_retriever import HybridRetrieverManager
 from ..retrievers.compression_retriever import CompressionRetrieverManager
 from ..prompts.templates import VehiclePromptTemplates
 from ..utils.document_loader import DocumentLoader
+from ..utils.answer_evaluator import AnswerEvaluator
 from ..tools.search_tools import (
     vector_store, bm25_retriever, hybrid_retriever, multi_query_retriever,
     cross_encoder_retriever, compression_retriever
@@ -37,6 +38,9 @@ class VehicleManualAgent:
         
         # 문서 로더 초기화
         self.document_loader = DocumentLoader()
+        
+        # 답변 평가기 초기화
+        self.answer_evaluator = AnswerEvaluator()
         
         # 프롬프트 템플릿 초기화
         self.analysis_prompt = VehiclePromptTemplates.get_query_analysis_prompt()
@@ -274,7 +278,29 @@ class VehicleManualAgent:
             if page_info and "📚" not in final_answer:
                 final_answer += page_info
             
-            return {"final_answer": final_answer}
+            # 답변 신뢰도 평가
+            evaluation = self.answer_evaluator.evaluate_answer(query, final_answer, search_results)
+            confidence_percentage = evaluation['percentage']
+            reliability_grade = evaluation['reliability_grade']
+            
+            # 신뢰도 정보를 답변에 추가
+            confidence_info = f"\n\n🔍 **답변 신뢰도**: {confidence_percentage}% ({reliability_grade})"
+            
+            # 신뢰도에 따른 추가 안내
+            if confidence_percentage >= 80:
+                confidence_info += "\n✅ 높은 신뢰도의 답변입니다."
+            elif confidence_percentage >= 60:
+                confidence_info += "\n⚠️ 추가 확인을 권장합니다."
+            else:
+                confidence_info += "\n❌ 전문가 상담을 강력히 권장합니다."
+            
+            final_answer_with_confidence = final_answer + confidence_info
+            
+            return {
+                "final_answer": final_answer_with_confidence,
+                "confidence_score": confidence_percentage / 100,
+                "evaluation_details": evaluation
+            }
             
         except Exception as e:
             print(f"답변 생성 오류: {str(e)}")

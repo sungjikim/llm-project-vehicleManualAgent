@@ -64,6 +64,21 @@ class AnswerEvaluator:
         # 5. 오류 없음 평가
         scores['error_free'] = self._evaluate_error_free(answer)
         
+        # 6. 검색 결과 품질 평가 (새로 추가)
+        if search_results:
+            scores['search_quality'] = self._evaluate_search_quality(search_results)
+            # 가중치 재조정 (검색 품질 포함)
+            self.quality_criteria['search_quality'] = {
+                'weight': 0.15,
+                'description': '검색 결과 품질 및 관련성'
+            }
+            # 기존 가중치들을 약간 조정
+            self.quality_criteria['page_reference']['weight'] = 0.20
+            self.quality_criteria['specific_info']['weight'] = 0.25
+            self.quality_criteria['answer_length']['weight'] = 0.15
+            self.quality_criteria['safety_info']['weight'] = 0.15
+            self.quality_criteria['error_free']['weight'] = 0.10
+        
         # 가중 평균 계산
         total_score = sum(
             scores[criterion] * self.quality_criteria[criterion]['weight']
@@ -150,6 +165,46 @@ class AnswerEvaluator:
             if indicator in answer_lower:
                 return 0.0
         return 1.0
+    
+    def _evaluate_search_quality(self, search_results: List[Dict]) -> float:
+        """검색 결과 품질 평가"""
+        if not search_results:
+            return 0.0
+        
+        score = 0.0
+        
+        # 검색 결과 개수 평가 (적절한 개수)
+        result_count = len(search_results)
+        if 3 <= result_count <= 5:
+            score += 0.3
+        elif 1 <= result_count <= 7:
+            score += 0.2
+        
+        # 페이지 정보 포함 비율
+        page_info_count = sum(1 for result in search_results if result.get('page', 0) > 0)
+        if page_info_count > 0:
+            page_ratio = page_info_count / result_count
+            score += 0.3 * page_ratio
+        
+        # 검색 점수 평가 (있는 경우)
+        scores = [result.get('score', 0) for result in search_results if result.get('score', 0) > 0]
+        if scores:
+            avg_score = sum(scores) / len(scores)
+            if avg_score > 0.7:
+                score += 0.2
+            elif avg_score > 0.5:
+                score += 0.1
+        
+        # 내용 길이 평가 (너무 짧거나 길지 않은지)
+        content_lengths = [len(result.get('content', '')) for result in search_results]
+        if content_lengths:
+            avg_length = sum(content_lengths) / len(content_lengths)
+            if 100 <= avg_length <= 500:
+                score += 0.2
+            elif 50 <= avg_length <= 800:
+                score += 0.1
+        
+        return min(score, 1.0)
     
     def _get_reliability_grade(self, score: float) -> str:
         """신뢰도 등급 결정"""
