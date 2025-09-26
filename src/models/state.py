@@ -22,3 +22,10 @@ class AgentState(TypedDict):
     confidence_score: float
     page_references: List[int]
     need_clarification: bool
+    
+    # 응급 상황 관련 필드
+    is_emergency: bool
+    emergency_level: str  # "CRITICAL", "HIGH", "MEDIUM", "LOW", "NORMAL"
+    emergency_score: float
+    emergency_analysis: dict
+    compression_method: str

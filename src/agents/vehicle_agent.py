@@ -19,6 +19,7 @@ from ..retrievers.compression_retriever import CompressionRetrieverManager
 from ..prompts.templates import VehiclePromptTemplates
 from ..utils.document_loader import DocumentLoader
 from ..utils.answer_evaluator import AnswerEvaluator
+from ..utils.emergency_detector import EmergencyDetector
 from ..tools.search_tools import (
     vector_store, bm25_retriever, hybrid_retriever, multi_query_retriever,
     cross_encoder_retriever, compression_retriever
@@ -41,6 +42,9 @@ class VehicleManualAgent:
         
         # 답변 평가기 초기화
         self.answer_evaluator = AnswerEvaluator()
+        
+        # 응급 상황 감지기 초기화
+        self.emergency_detector = EmergencyDetector()
         
         # 프롬프트 템플릿 초기화
         self.analysis_prompt = VehiclePromptTemplates.get_query_analysis_prompt()
@@ -135,12 +139,72 @@ class VehicleManualAgent:
             "rerank_compress_troubleshooting": cross_encoder_retriever
         }
     
-    def query_analyzer(self, state: AgentState) -> Dict[str, Any]:
-        """쿼리 분석 노드"""
+    def emergency_classifier(self, state: AgentState) -> Dict[str, Any]:
+        """응급 상황 분류 노드"""
         query = state["query"]
         
         try:
-            # Few-shot 프롬프트로 쿼리 분석
+            # 응급 상황 감지
+            emergency_analysis = self.emergency_detector.detect_emergency(query)
+            
+            print(f"🚨 응급 상황 분석: {emergency_analysis['priority_level']} "
+                  f"(점수: {emergency_analysis['total_score']})")
+            
+            if emergency_analysis["is_emergency"]:
+                # 응급 상황 처리 모드
+                search_strategy = emergency_analysis["search_strategy"]
+                
+                return {
+                    "is_emergency": True,
+                    "emergency_level": emergency_analysis["priority_level"],
+                    "emergency_score": emergency_analysis["total_score"],
+                    "search_strategy": "troubleshooting",  # 강제로 문제해결 전략
+                    "search_method": search_strategy["search_method"],
+                    "compression_method": search_strategy["compression_method"],
+                    "emergency_analysis": emergency_analysis
+                }
+            else:
+                # 일반 질문 처리 모드  
+                return {
+                    "is_emergency": False,
+                    "emergency_level": "NORMAL",
+                    "emergency_score": emergency_analysis["total_score"],
+                    "emergency_analysis": emergency_analysis
+                }
+                
+        except Exception as e:
+            print(f"응급 상황 분류 오류: {str(e)}")
+            # 오류 시 안전하게 일반 모드로 처리
+            return {
+                "is_emergency": False,
+                "emergency_level": "NORMAL", 
+                "emergency_score": 0,
+                "emergency_analysis": None
+            }
+    
+    def query_analyzer(self, state: AgentState) -> Dict[str, Any]:
+        """쿼리 분석 노드"""
+        query = state["query"]
+        is_emergency = state.get("is_emergency", False)
+        
+        try:
+            # 응급 상황이면 이미 설정된 전략 사용
+            if is_emergency:
+                search_strategy = state.get("search_strategy", "troubleshooting")
+                search_method = state.get("search_method", "hybrid_keyword")
+                compression_method = state.get("compression_method", "rerank_compress_troubleshooting")
+                confidence_score = 0.95  # 응급 상황은 높은 신뢰도로 처리
+                
+                print(f"🚨 응급 모드: {search_strategy} -> {search_method}")
+                
+                return {
+                    "search_strategy": search_strategy,
+                    "search_method": search_method,
+                    "confidence_score": confidence_score,
+                    "compression_method": compression_method
+                }
+            
+            # 일반 질문 처리
             analysis_chain = self.analysis_prompt | self.llm | StrOutputParser()
             analysis_result = analysis_chain.invoke({"query": query})
             
@@ -237,6 +301,8 @@ class VehicleManualAgent:
         query = state["query"]
         search_results = state.get("search_results", [])
         page_references = state.get("page_references", [])
+        is_emergency = state.get("is_emergency", False)
+        emergency_level = state.get("emergency_level", "NORMAL")
         
         try:
             # 컨텍스트 구성 (페이지 정보 강화)
@@ -255,6 +321,13 @@ class VehicleManualAgent:
                     context_parts.append(f"[검색결과 {i}] (관련도: {score:.2f})\n{content}")
             
             context = "\n\n".join(context_parts)
+            
+            # 응급 상황 프롬프트 강화
+            emergency_enhancement = ""
+            if is_emergency:
+                emergency_enhancement = self.emergency_detector.get_emergency_prompt_enhancement(emergency_level)
+                context = emergency_enhancement + "\n\n" + context
+                print(f"🚨 응급 답변 생성 모드: {emergency_level}")
             
             # 페이지 참조 정보 추가
             page_info = ""
@@ -278,28 +351,62 @@ class VehicleManualAgent:
             if page_info and "📚" not in final_answer:
                 final_answer += page_info
             
-            # 답변 신뢰도 평가
-            evaluation = self.answer_evaluator.evaluate_answer(query, final_answer, search_results)
-            confidence_percentage = evaluation['percentage']
-            reliability_grade = evaluation['reliability_grade']
+            # 응급 상황 등급 표시를 답변 첫 줄에 추가
+            emergency_header = ""
+            if is_emergency:
+                # 응급 상황 헤더 생성
+                emergency_icons = {
+                    "CRITICAL": "🔥",
+                    "HIGH": "🚨", 
+                    "MEDIUM": "⚠️",
+                    "LOW": "🔍"
+                }
+                icon = emergency_icons.get(emergency_level, "🚨")
+                emergency_header = f"{icon} **{emergency_level} 응급 상황**\n\n"
+                
+                # 응급 상황에서는 신뢰도 평가 간소화 (속도 우선)
+                confidence_percentage = 85.0  # 응급 상황 기본 신뢰도
+                reliability_grade = "높음 (A)"
+                
+                # 응급 상황 경고 추가
+                emergency_warning = f"\n\n🚨 **응급 상황 ({emergency_level})**"
+                if emergency_level == "CRITICAL":
+                    emergency_warning += "\n⚠️ 생명 위험 상황입니다. 즉시 조치하고 119에 신고하세요."
+                elif emergency_level == "HIGH":
+                    emergency_warning += "\n⚠️ 즉시 안전 조치가 필요합니다. 전문가에게 연락하세요."
+                else:
+                    emergency_warning += "\n⚠️ 신속한 대응이 필요합니다."
+                
+                final_answer = emergency_header + final_answer + emergency_warning
+            else:
+                # 일반 질문 헤더 생성
+                emergency_header = "📝 **일반 질문**\n\n"
+                
+                # 일반 상황 신뢰도 평가
+                evaluation = self.answer_evaluator.evaluate_answer(query, final_answer, search_results)
+                confidence_percentage = evaluation['percentage']
+                reliability_grade = evaluation['reliability_grade']
+                
+                final_answer = emergency_header + final_answer
             
             # 신뢰도 정보를 답변에 추가
             confidence_info = f"\n\n🔍 **답변 신뢰도**: {confidence_percentage}% ({reliability_grade})"
             
-            # 신뢰도에 따른 추가 안내
-            if confidence_percentage >= 80:
-                confidence_info += "\n✅ 높은 신뢰도의 답변입니다."
-            elif confidence_percentage >= 60:
-                confidence_info += "\n⚠️ 추가 확인을 권장합니다."
-            else:
-                confidence_info += "\n❌ 전문가 상담을 강력히 권장합니다."
+            # 신뢰도에 따른 추가 안내 (응급 상황이 아닐 때만)
+            if not is_emergency:
+                if confidence_percentage >= 80:
+                    confidence_info += "\n✅ 높은 신뢰도의 답변입니다."
+                elif confidence_percentage >= 60:
+                    confidence_info += "\n⚠️ 추가 확인을 권장합니다."
+                else:
+                    confidence_info += "\n❌ 전문가 상담을 강력히 권장합니다."
             
             final_answer_with_confidence = final_answer + confidence_info
             
             return {
                 "final_answer": final_answer_with_confidence,
                 "confidence_score": confidence_percentage / 100,
-                "evaluation_details": evaluation
+                "evaluation_details": evaluation if not is_emergency else None
             }
             
         except Exception as e:
@@ -345,13 +452,15 @@ class VehicleManualAgent:
         """LangGraph 워크플로우 생성"""
         workflow = StateGraph(AgentState)
         
-        # 노드 추가
+        # 노드 추가 (응급 분류 노드 추가)
+        workflow.add_node("emergency_classifier", self.emergency_classifier)
         workflow.add_node("query_analyzer", self.query_analyzer)
         workflow.add_node("search_executor", self.search_executor)
         workflow.add_node("answer_generator", self.answer_generator)
         
-        # 엣지 추가
-        workflow.set_entry_point("query_analyzer")
+        # 엣지 추가 (응급 분류 -> 쿼리 분석 -> 검색 -> 답변)
+        workflow.set_entry_point("emergency_classifier")
+        workflow.add_edge("emergency_classifier", "query_analyzer")
         workflow.add_edge("query_analyzer", "search_executor")
         workflow.add_edge("search_executor", "answer_generator")
         workflow.add_edge("answer_generator", END)
@@ -374,7 +483,13 @@ class VehicleManualAgent:
                 "search_method": "",
                 "confidence_score": 0.0,
                 "page_references": [],
-                "need_clarification": False
+                "need_clarification": False,
+                # 응급 상황 관련 초기값
+                "is_emergency": False,
+                "emergency_level": "NORMAL",
+                "emergency_score": 0.0,
+                "emergency_analysis": {},
+                "compression_method": ""
             }
             
             # 콜백이 있으면 설정에 포함
