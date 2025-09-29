@@ -29,3 +29,11 @@ class AgentState(TypedDict):
     emergency_score: float
     emergency_analysis: dict
     compression_method: str
+    
+    # 주행 중 상황 관련 필드
+    is_driving: bool
+    driving_confidence: float
+    driving_indicators: List[str]
+    driving_urgency: str  # "immediate", "urgent", "normal"
+    compression_needed: bool
+    compressed_answer: str
