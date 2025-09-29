@@ -65,10 +65,16 @@ class PerformanceMonitoringHandler(BaseCallbackHandler):
     def on_llm_start(self, serialized: Dict[str, Any], prompts: List[str], **kwargs) -> None:
         """LLM 호출 시작 시 호출"""
         self.performance_stats["total_llm_calls"] += 1
+        # serialized가 None일 수 있으므로 안전하게 처리
+        if serialized and serialized.get("id"):
+            model_name = serialized["id"][-1] if serialized["id"] else "unknown"
+        else:
+            model_name = "unknown"
+            
         llm_call = {
             "start_time": time.time(),
             "prompts": prompts if self.enable_detailed_logging else len(prompts),
-            "model": serialized.get("id", ["unknown"])[-1] if serialized.get("id") else "unknown"
+            "model": model_name
         }
         self.llm_calls.append(llm_call)
         
@@ -106,10 +112,17 @@ class PerformanceMonitoringHandler(BaseCallbackHandler):
     def on_retriever_start(self, serialized: Dict[str, Any], query: str, **kwargs) -> None:
         """리트리버 호출 시작 시 호출"""
         self.performance_stats["total_retriever_calls"] += 1
+        
+        # serialized가 None일 수 있으므로 안전하게 처리
+        if serialized and serialized.get("id"):
+            retriever_type = serialized["id"][-1] if serialized["id"] else "unknown"
+        else:
+            retriever_type = "unknown"
+            
         retriever_call = {
             "start_time": time.time(),
             "query": query[:100] + "..." if len(query) > 100 else query,
-            "type": serialized.get("id", ["unknown"])[-1] if serialized.get("id") else "unknown"
+            "type": retriever_type
         }
         self.retriever_calls.append(retriever_call)
         
@@ -199,7 +212,11 @@ class RealTimeNotificationHandler(BaseCallbackHandler):
     def on_retriever_start(self, serialized: Dict[str, Any], query: str, **kwargs) -> None:
         """검색 시작 알림"""
         if self.enable_notifications:
-            retriever_type = serialized.get("id", ["unknown"])[-1] if serialized.get("id") else "unknown"
+            # serialized가 None일 수 있으므로 안전하게 처리
+            if serialized and serialized.get("id"):
+                retriever_type = serialized["id"][-1] if serialized["id"] else "unknown"
+            else:
+                retriever_type = "unknown"
             print(f"🔍 {retriever_type} 검색 실행 중...")
     
     def on_retriever_end(self, documents: List[Document], **kwargs) -> None:
