@@ -14,13 +14,15 @@ class EmergencyDetector:
         self.emergency_keywords = {
             # 최고 위험도 (10점)
             "critical": {
-                "keywords": ["화재", "불", "타는냄새", "타는", "냄새", "연기", "폭발", "사고", "충돌", "부딪", "뒤집", "전복"],
+                "keywords": ["화재", "불", "타는냄새", "타는", "냄새", "연기", "폭발", "사고", "충돌", "부딪", "뒤집", "전복", 
+                            "전자장비", "모든", "꺼졌어요", "꺼져서", "작동안", "응답없", "반응없"],
                 "weight": 10,
                 "priority": "CRITICAL"
             },
             # 높은 위험도 (8점)  
             "high": {
-                "keywords": ["브레이크", "제동", "핸들", "조향", "스티어링", "엔진정지", "멈춤", "꺼짐", "시동꺼짐"],
+                "keywords": ["브레이크", "제동", "핸들", "조향", "스티어링", "엔진정지", "멈춤", "꺼짐", "시동꺼짐",
+                            "가속", "속도", "안올라", "페달", "밟아도", "안", "위험해", "쏠려"],
                 "weight": 8,
                 "priority": "HIGH"
             },
@@ -86,6 +88,24 @@ class EmergencyDetector:
         """응급 상황 감지 및 분석"""
         query_lower = query.lower()
         
+        # 정비/교체 관련 키워드 (응급도 감소)
+        maintenance_keywords = [
+            "교체", "갈아", "바꿔", "주기", "언제", "시기", "정비", "점검", 
+            "관리", "유지", "보수", "서비스", "수리"
+        ]
+        
+        # 기술/시스템 문의 키워드 (응급도 감소)
+        technology_keywords = [
+            "시스템", "기능", "설정", "방법", "사용법", "작동", "뭔가요", "무엇", 
+            "어떻게", "설명", "알려주세요", "궁금해요", "차이점", "원리"
+        ]
+        
+        # 정비 관련 질문인지 확인
+        is_maintenance_question = any(keyword in query_lower for keyword in maintenance_keywords)
+        
+        # 기술 문의인지 확인
+        is_technology_question = any(keyword in query_lower for keyword in technology_keywords)
+        
         # 응급도 점수 계산
         emergency_score = 0
         detected_categories = []
@@ -95,12 +115,20 @@ class EmergencyDetector:
         for category, data in self.emergency_keywords.items():
             for keyword in data["keywords"]:
                 if keyword in query_lower:
-                    emergency_score += data["weight"]
+                    weight = data["weight"]
+                    
+                    # 정비 질문이나 기술 문의인 경우 응급도 대폭 감소
+                    if is_maintenance_question or is_technology_question:
+                        weight = max(1, weight // 4)  # 1/4로 감소, 최소 1점
+                    
+                    emergency_score += weight
                     detected_categories.append({
                         "category": category,
                         "keyword": keyword,
-                        "weight": data["weight"],
-                        "priority": data["priority"]
+                        "weight": weight,
+                        "original_weight": data["weight"],
+                        "priority": data["priority"],
+                        "maintenance_adjusted": is_maintenance_question
                     })
                     
                     # 최고 우선순위 업데이트
@@ -130,8 +158,19 @@ class EmergencyDetector:
         # 총 점수 계산
         total_score = emergency_score + urgency_score
         
-        # 응급 상황 판정 (임계값: 6점 이상)
-        is_emergency = total_score >= 6 or priority_level in ["CRITICAL", "HIGH"]
+        # 응급 상황 판정 
+        # 정비/기술 질문인 경우 더 높은 임계값 적용
+        is_non_emergency_question = is_maintenance_question or is_technology_question
+        threshold = 10 if is_non_emergency_question else 6
+        is_emergency = total_score >= threshold or (priority_level in ["CRITICAL", "HIGH"] and not is_non_emergency_question)
+        
+        # 정비/기술 질문인 경우 응급도 낮추기
+        if is_non_emergency_question and priority_level in ["CRITICAL", "HIGH"]:
+            if total_score <= 3:
+                priority_level = "NORMAL"
+                is_emergency = False
+            elif total_score <= 6:
+                priority_level = "LOW"
         
         return {
             "is_emergency": is_emergency,

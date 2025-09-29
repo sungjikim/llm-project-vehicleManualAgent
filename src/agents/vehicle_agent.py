@@ -444,10 +444,20 @@ class VehicleManualAgent:
             
             final_answer_with_confidence = final_answer + confidence_info
             
+            # 응급 상황에서 evaluation 변수가 없을 수 있으므로 처리
+            if is_emergency and 'evaluation' not in locals():
+                evaluation = {
+                    "total_score": confidence_percentage / 100,
+                    "percentage": confidence_percentage,
+                    "reliability_grade": reliability_grade,
+                    "emergency_mode": True,
+                    "emergency_level": emergency_level
+                }
+            
             return {
                 "final_answer": final_answer_with_confidence,
                 "confidence_score": confidence_percentage / 100,
-                "evaluation_details": evaluation if not is_emergency else None
+                "evaluation_details": evaluation if 'evaluation' in locals() else None
             }
             
         except Exception as e:
