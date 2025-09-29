@@ -98,6 +98,11 @@ def main():
                 
                 print("-" * 50)
                 
+                # 새로운 쿼리를 위해 콜백 핸들러 세션 초기화
+                for callback in callbacks:
+                    if hasattr(callback, 'reset_session'):
+                        callback.reset_session()
+                
                 # 콜백과 함께 쿼리 실행
                 answer = agent.query(user_input, callbacks=callbacks)
                 

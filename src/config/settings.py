@@ -27,7 +27,7 @@ CROSS_ENCODER_MODEL = "BAAI/bge-reranker-v2-m3"
 
 # 검색 설정
 DEFAULT_TOP_K = 5
-CANDIDATE_DOCS_COUNT = 20  # 재순위화를 위한 후보 문서 수
+CANDIDATE_DOCS_COUNT = 10  # 재순위화를 위한 후보 문서 수
 CHUNK_SIZE = 300
 CHUNK_OVERLAP = 30
 BATCH_SIZE = 50

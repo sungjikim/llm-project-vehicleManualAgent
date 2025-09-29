@@ -101,10 +101,14 @@ class VehicleManualAgent:
         self.compression_manager.initialize_cross_encoder_retriever()
         self.compression_manager.initialize_contextual_compression()
         
-        # 전역 변수 설정
-        global cross_encoder_retriever, compression_retriever
-        cross_encoder_retriever = self.compression_manager.get_cross_encoder_retriever()
-        compression_retriever = self.compression_manager.get_compression_retriever()
+        # search_tools 모듈의 전역 변수 업데이트
+        import src.tools.search_tools as search_tools
+        search_tools.vector_store = vector_store
+        search_tools.bm25_retriever = bm25_retriever
+        search_tools.hybrid_retriever = None  # 하이브리드 검색기는 EnsembleRetriever로 동적 생성됨
+        search_tools.multi_query_retriever = multi_query_retriever
+        search_tools.cross_encoder_retriever = self.compression_manager.get_cross_encoder_retriever()
+        search_tools.compression_retriever = self.compression_manager.get_compression_retriever()
         
         # 5. 검색 옵션 설정
         self._setup_search_options()
@@ -131,16 +135,22 @@ class VehicleManualAgent:
                 weights=[WEIGHT_CONFIGS["hybrid_keyword"], 1 - WEIGHT_CONFIGS["hybrid_keyword"]]
             ),
             "multi_query": multi_query_retriever,
-            "expanded_query": self.search_options.get("hybrid_semantic")  # 기본값으로 설정
+            "expanded_query": EnsembleRetriever(
+                retrievers=[semantic_retriever, bm25_retriever],
+                weights=[WEIGHT_CONFIGS["hybrid_semantic"], 1 - WEIGHT_CONFIGS["hybrid_semantic"]]
+            )
         }
         
         # 재순위화 및 압축 옵션
+        cross_encoder_ret = self.compression_manager.get_cross_encoder_retriever()
+        compression_ret = self.compression_manager.get_compression_retriever()
+        
         self.rerank_compression_options = {
-            "rerank_only": cross_encoder_retriever,
-            "compress_only": compression_retriever,
-            "rerank_compress_general": cross_encoder_retriever,
-            "rerank_compress_specific": compression_retriever,
-            "rerank_compress_troubleshooting": cross_encoder_retriever
+            "rerank_only": cross_encoder_ret,
+            "compress_only": compression_ret,
+            "rerank_compress_general": cross_encoder_ret,
+            "rerank_compress_specific": compression_ret,
+            "rerank_compress_troubleshooting": cross_encoder_ret
         }
     
     def emergency_classifier(self, state: AgentState) -> Dict[str, Any]:

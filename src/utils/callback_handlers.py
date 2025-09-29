@@ -183,10 +183,19 @@ class RealTimeNotificationHandler(BaseCallbackHandler):
         self.current_step = 0
         self.total_steps = 0
         self.step_descriptions = []
+        self.session_started = False  # 세션 시작 여부 추적
+        self.session_ended = False    # 세션 종료 여부 추적
+    
+    def reset_session(self):
+        """새로운 쿼리를 위해 세션 상태 초기화"""
+        self.session_started = False
+        self.session_ended = False
+        self.current_step = 0
         
     def on_chain_start(self, serialized: Dict[str, Any], inputs: Dict[str, Any], **kwargs) -> None:
         """체인 시작 알림"""
-        if self.enable_notifications:
+        # 세션이 시작되지 않았을 때만 "처리 시작" 메시지 출력
+        if self.enable_notifications and not self.session_started:
             query = ""
             if isinstance(inputs, dict):
                 query = inputs.get("query", inputs.get("input", ""))
@@ -201,19 +210,21 @@ class RealTimeNotificationHandler(BaseCallbackHandler):
                 query = query[:50] + "..."
             
             print(f"\n🚀 처리 시작: {query}")
+            self.session_started = True
             
-        # 진행 단계 설정
-        self.current_step = 0
-        self.total_steps = 4  # 분석 -> 검색 -> 재순위화 -> 답변생성
-        self.step_descriptions = [
-            "쿼리 분석 중...",
-            "문서 검색 중...",
-            "결과 최적화 중...",
-            "답변 생성 중..."
-        ]
-        
-        if self.enable_progress_bar:
-            self._print_progress_bar()
+        # 진행 단계 설정 (첫 번째 호출 시에만)
+        if not self.session_started or self.current_step == 0:
+            self.current_step = 0
+            self.total_steps = 4  # 분석 -> 검색 -> 재순위화 -> 답변생성
+            self.step_descriptions = [
+                "쿼리 분석 중...",
+                "문서 검색 중...",
+                "결과 최적화 중...",
+                "답변 생성 중..."
+            ]
+            
+            if self.enable_progress_bar:
+                self._print_progress_bar()
     
     def on_llm_start(self, serialized: Dict[str, Any], prompts: List[str], **kwargs) -> None:
         """LLM 시작 알림"""
@@ -238,13 +249,18 @@ class RealTimeNotificationHandler(BaseCallbackHandler):
     
     def on_chain_end(self, outputs: Dict[str, Any], **kwargs) -> None:
         """체인 완료 알림"""
-        if self.enable_progress_bar:
+        # 최종 체인이 끝날 때만 "답변 생성 완료" 메시지 출력
+        # outputs에 'final_answer'가 있으면 최종 완료로 간주
+        is_final_completion = outputs and 'final_answer' in outputs
+        
+        if self.enable_progress_bar and is_final_completion:
             self.current_step = self.total_steps
             self._print_progress_bar()
             print()  # 줄바꿈
         
-        if self.enable_notifications:
+        if self.enable_notifications and is_final_completion and not self.session_ended:
             print("✅ 답변 생성 완료!")
+            self.session_ended = True
     
     def on_chain_error(self, error: Union[Exception, KeyboardInterrupt], **kwargs) -> None:
         """오류 알림"""
