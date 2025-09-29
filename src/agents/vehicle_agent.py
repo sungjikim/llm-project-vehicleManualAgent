@@ -220,13 +220,23 @@ class VehicleManualAgent:
                 confidence_score = 0.8
             
             # 쿼리 확장 및 다중 쿼리 로직
+            original_search_method = search_method
             if any(keyword in query.lower() for keyword in ['교체', '문제', '고장', '이상']):
                 search_method = "expanded_query"
+                print(f"🔧 키워드 기반 검색 방법 변경: {original_search_method} → {search_method}")
             elif len(query) > 20 and '?' in query:
                 search_method = "multi_query"
+                print(f"🔧 복잡한 질문 감지, 검색 방법 변경: {original_search_method} → {search_method}")
             
             # 재순위화/압축 방법 선택
             compression_method = self._select_compression_method(search_strategy)
+            
+            # 검색 전략 로그 출력
+            print(f"📋 쿼리 분석 결과:")
+            print(f"   • 검색 전략: {search_strategy}")
+            print(f"   • 검색 방법: {search_method}")
+            print(f"   • 신뢰도: {confidence_score}")
+            print(f"   • 압축 방법: {compression_method}")
             
             return {
                 "search_strategy": search_strategy,
@@ -250,16 +260,23 @@ class VehicleManualAgent:
         search_method = state.get("search_method", "hybrid_semantic")
         compression_method = state.get("compression_method", "rerank_compress_general")
         
+        print(f"🔍 검색 실행 시작:")
+        print(f"   • 선택된 검색 방법: {search_method}")
+        print(f"   • 압축/재순위화 방법: {compression_method}")
+        
         try:
             # 1차 검색 수행
             if search_method == "expanded_query":
+                print("🔎 확장 쿼리 검색 실행 중...")
                 from ..tools.search_tools import expanded_query_search
                 search_results = expanded_query_search.invoke({"query": query, "top_k": DEFAULT_TOP_K})
             elif search_method == "multi_query":
+                print("🔎 다중 쿼리 검색 실행 중...")
                 from ..tools.search_tools import multi_query_search
                 search_results = multi_query_search.invoke({"query": query, "top_k": DEFAULT_TOP_K})
             else:
                 # 기본 검색 수행
+                print(f"🔎 기본 검색 실행 중... (방법: {search_method})")
                 retriever = self.search_options.get(search_method)
                 if retriever:
                     docs = retriever.invoke(query)
@@ -273,16 +290,26 @@ class VehicleManualAgent:
                         for doc in docs[:DEFAULT_TOP_K]
                     ]
                 else:
+                    print(f"❌ 검색 방법 '{search_method}'을 찾을 수 없습니다.")
                     search_results = [{"content": "검색 방법을 찾을 수 없습니다.", "page": 0, "score": 0.0}]
+            
+            print(f"📊 1차 검색 결과: {len(search_results)}개 문서 발견")
             
             # 2차 재순위화/압축 적용
             if compression_method and compression_method != "none":
+                print(f"🔄 재순위화/압축 적용 중... (방법: {compression_method})")
+                original_count = len(search_results)
                 search_results = self._apply_compression(query, search_results, compression_method)
+                print(f"✅ 재순위화 완료: {original_count}개 → {len(search_results)}개 문서")
+            else:
+                print("⏭️  재순위화/압축 건너뜀")
             
             # 페이지 참조 추출
             page_references = list(set([
                 result.get("page", 0) for result in search_results if result.get("page", 0) > 0
             ]))
+            
+            print(f"📄 최종 검색 결과: {len(search_results)}개 문서, {len(page_references)}개 페이지 참조")
             
             return {
                 "search_results": search_results,
