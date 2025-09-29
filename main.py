@@ -97,20 +97,11 @@ def main():
                     continue
                 
                 print("-" * 50)
-                start_time = time.time()
                 
                 # 콜백과 함께 쿼리 실행
                 answer = agent.query(user_input, callbacks=callbacks)
                 
-                elapsed_time = time.time() - start_time
-                
                 print(f"\n💡 답변:\n{answer}")
-                print(f"\n⏱️  소요 시간: {elapsed_time:.2f}초")
-                
-                # 간단한 통계 출력
-                stats = performance_handler.get_performance_summary()
-                print(f"📊 세션 통계: {stats['total_queries']}개 쿼리, "
-                      f"평균 {stats['average_response_time']:.2f}초")
                 print("-" * 50)
                 
             except KeyboardInterrupt:
