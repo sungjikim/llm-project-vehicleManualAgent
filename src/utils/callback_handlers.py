@@ -187,8 +187,20 @@ class RealTimeNotificationHandler(BaseCallbackHandler):
     def on_chain_start(self, serialized: Dict[str, Any], inputs: Dict[str, Any], **kwargs) -> None:
         """체인 시작 알림"""
         if self.enable_notifications:
-            query = inputs.get("query", inputs.get("input", ""))[:50]
-            print(f"\n🚀 처리 시작: {query}...")
+            query = ""
+            if isinstance(inputs, dict):
+                query = inputs.get("query", inputs.get("input", ""))
+            elif hasattr(inputs, 'content'):
+                query = str(inputs.content)
+            elif isinstance(inputs, str):
+                query = inputs
+            else:
+                query = str(inputs)
+            
+            if len(query) > 50:
+                query = query[:50] + "..."
+            
+            print(f"\n🚀 처리 시작: {query}")
             
         # 진행 단계 설정
         self.current_step = 0
