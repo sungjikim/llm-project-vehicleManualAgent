@@ -62,81 +62,19 @@ def main():
         print("📊 성능 모니터링 활성화")
         print("🔔 실시간 알림 활성화")
         
-        # 차량 내 운전자가 궁금해할 수 있는 실제 상황들
-        test_queries = [
-            # === 일반 질문 (5개) ===
-            "운전석 시트를 내 체형에 맞게 조정하는 방법이 궁금해요",
-            "겨울철 히터를 효율적으로 사용하는 방법을 알려주세요",
-            "후방 카메라 화면이 흐릿한데 청소는 어떻게 하나요?",
-            "연비를 좋게 하려면 어떤 운전 습관을 가져야 할까요?",
-            "블루투스로 스마트폰 음악을 들으려면 어떻게 연결하나요?",
-            
-            # === 응급 상황 (5개) ===
-            "주행 중 갑자기 엔진 경고등이 빨갛게 켜졌어요! 어떻게 해야 하나요?",
-            "고속도로에서 타이어가 터진 것 같은데 안전하게 대처하는 방법은?",
-            "브레이크 페달을 밟는데 바닥까지 들어가요! 급한 상황인가요?",
-            "운전 중 시동이 꺼지면서 파워 스티어링이 무거워졌어요!",
-            "차 안에 가스 냄새가 나는데 즉시 해야 할 조치가 뭔가요?"
-        ]
-        
-        print(f"\n🧪 운전자 실제 상황 테스트 ({len(test_queries)}개 질문)")
-        print("📝 일반 질문 5개 + 🚨 응급 상황 5개")
-        print("=" * 60)
-        
-        for i, query in enumerate(test_queries, 1):
-            # 질문 유형 구분
-            if i <= 5:
-                question_type = "📝 일반 질문"
-                question_icon = "📝"
-            else:
-                question_type = "🚨 응급 상황"
-                question_icon = "🚨"
-            
-            print(f"\n[테스트 {i}/{len(test_queries)}] {question_type}")
-            print(f"{question_icon} 질문: {query}")
-            print("-" * 50)
-            
-            try:
-                # 시작 시간 기록
-                start_time = time.time()
-                
-                # 콜백과 함께 쿼리 실행
-                answer = agent.query(query, callbacks=callbacks)
-                
-                # 소요 시간 계산
-                elapsed_time = time.time() - start_time
-                
-                # 결과 출력
-                print(f"\n💡 답변:\n{answer}")
-                print(f"\n⏱️  소요 시간: {elapsed_time:.2f}초")
-                
-                # 현재 세션 통계 출력
-                stats = performance_handler.get_performance_summary()
-                print(f"📊 누적 통계: {stats['total_queries']}개 쿼리, "
-                      f"{stats['total_tokens_used']:,} 토큰, "
-                      f"${stats['total_cost']:.4f}")
-                
-            except Exception as e:
-                print(f"❌ 오류 발생: {str(e)}")
-            
-            print("=" * 60)
-            
-            # 다음 테스트 전 잠시 대기
-            if i < len(test_queries):
-                print("다음 테스트 준비 중...")
-                time.sleep(2)
-        
-        print("\n🎉 모든 테스트 완료!")
-        
-        # 테스트 완료 후 성능 리포트 출력
-        performance_handler.print_performance_report()
         
         # 대화형 모드 안내
         print("\n" + "=" * 60)
-        print("💬 대화형 모드")
+        print("💬 지능형 차량 어시스턴트 - 대화형 모드")
         print("=" * 60)
-        print("직접 질문을 입력하세요 (종료: 'quit' 또는 'exit')")
-        print("💡 팁: 'stats'를 입력하면 현재 성능 통계를 확인할 수 있습니다.")
+        print("🚗 차량에 관한 모든 질문을 자유롭게 해주세요!")
+        print("📝 일반 질문부터 🚨 응급 상황까지 즉시 대응합니다.")
+        print("")
+        print("💡 사용법:")
+        print("   • 질문 입력 후 Enter")
+        print("   • 'stats' - 성능 통계 확인")
+        print("   • 'quit' 또는 'exit' - 종료")
+        print("=" * 60)
         
         while True:
             try:

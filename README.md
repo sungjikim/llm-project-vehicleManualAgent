@@ -43,8 +43,10 @@ project/
 │   ├── test_performance_benchmark.py # 성능 벤치마크 테스트
 │   └── quick_test.py              # 빠른 테스트
 ├── data/                          # 데이터 파일 (PDF 등)
-├── main.py                        # 메인 실행 파일
+├── main.py                        # 메인 실행 파일 (대화형 모드)
 ├── run_tests.py                   # 테스트 실행 스크립트
+├── test_driver_scenarios.py       # 운전자 실제 상황 테스트
+├── test_scenarios.md              # 테스트 시나리오 문서
 └── requirements.txt               # 필요 패키지 목록
 ```
 
@@ -126,8 +128,9 @@ python run_tests.py --test-type all --verbose
 - "차 안에 가스 냄새가 나는데 즉시 해야 할 조치가 뭔가요?"
 
 ```bash
-# 실제 상황 테스트 실행
-python main.py  # 메인 프로그램에 실제 상황 테스트 포함
+# 실제 상황 테스트 실행 (별도 파일)
+python test_driver_scenarios.py           # 전체 테스트 (10개 질문)
+python test_driver_scenarios.py --mode quick  # 빠른 테스트 (3개 질문)
 ```
 
 ## 🔧 시스템 구성요소
