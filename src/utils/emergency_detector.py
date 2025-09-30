@@ -47,7 +47,7 @@ class EmergencyDetector:
                 "weight": 3
             },
             "urgent": {
-                "keywords": ["갑자기", "突然", "어떻게해야", "어떻게해", "도와줘", "도움"],
+                "keywords": ["갑자기", "어떻게해야", "어떻게해", "도와줘", "도움"],
                 "weight": 2
             },
             "concern": {
