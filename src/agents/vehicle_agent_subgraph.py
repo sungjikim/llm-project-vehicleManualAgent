@@ -179,13 +179,13 @@ class VehicleManualAgentSubGraph:
         """응급 상황 감지 래퍼 노드"""
         query = state["query"]
         
-        print("🚨 응급 상황 감지 SubGraph 실행 중...")
+        # print("🚨 응급 상황 감지 SubGraph 실행 중...")
         
         try:
             # Emergency Detection SubGraph 실행
             emergency_result = self.emergency_subgraph.invoke(query)
             
-            print(f"✅ 응급 상황 감지 완료: {emergency_result['is_emergency']}")
+            # print(f"✅ 응급 상황 감지 완료: {emergency_result['is_emergency']}")
             
             return {
                 "is_emergency": emergency_result["is_emergency"],
@@ -214,7 +214,7 @@ class VehicleManualAgentSubGraph:
         query = state["query"]
         is_emergency = state.get("is_emergency", False)
         
-        print("🔍 검색 파이프라인 SubGraph 실행 중...")
+        # print("🔍 검색 파이프라인 SubGraph 실행 중...")
         
         try:
             # 응급 상황 데이터 준비
@@ -233,7 +233,7 @@ class VehicleManualAgentSubGraph:
                 emergency_data=emergency_data
             )
             
-            print(f"✅ 검색 파이프라인 완료: {len(search_result['search_results'])}개 문서")
+            # print(f"✅ 검색 파이프라인 완료: {len(search_result['search_results'])}개 문서")
             
             return {
                 "search_strategy": search_result["search_strategy"],
@@ -263,7 +263,7 @@ class VehicleManualAgentSubGraph:
         is_emergency = state.get("is_emergency", False)
         emergency_level = state.get("emergency_level", "NORMAL")
         
-        print("📝 답변 생성 SubGraph 실행 중...")
+        # print("📝 답변 생성 SubGraph 실행 중...")
         
         try:
             # Answer Generation SubGraph 실행
@@ -275,7 +275,7 @@ class VehicleManualAgentSubGraph:
                 emergency_level=emergency_level
             )
             
-            print(f"✅ 답변 생성 완료: {len(answer_result['final_answer'])}자")
+            # print(f"✅ 답변 생성 완료: {len(answer_result['final_answer'])}자")
             
             return {
                 "final_answer": answer_result["final_answer"],
@@ -298,7 +298,7 @@ class VehicleManualAgentSubGraph:
         is_emergency = state.get("is_emergency", False)
         emergency_level = state.get("emergency_level", "NORMAL")
         
-        print("🚗 주행 상황 처리 SubGraph 실행 중...")
+        # print("🚗 주행 상황 처리 SubGraph 실행 중...")
         
         try:
             # Driving Context SubGraph 실행
@@ -309,7 +309,7 @@ class VehicleManualAgentSubGraph:
                 emergency_level=emergency_level
             )
             
-            print(f"✅ 주행 상황 처리 완료: {driving_result['is_driving']}")
+            # print(f"✅ 주행 상황 처리 완료: {driving_result['is_driving']}")
             
             return {
                 "is_driving": driving_result["is_driving"],
@@ -341,7 +341,7 @@ class VehicleManualAgentSubGraph:
         
         # 이미 텍스트 쿼리가 있으면 음성 인식 건너뛰기
         if existing_query and existing_query.strip():
-            print("📝 텍스트 쿼리 감지 - 음성 인식 건너뛰기")
+            # print("📝 텍스트 쿼리 감지 - 음성 인식 건너뛰기")
             return {
                 "recognized_text": "",
                 "speech_confidence": 0.0,
@@ -349,7 +349,7 @@ class VehicleManualAgentSubGraph:
                 "query": existing_query  # 기존 쿼리 유지
             }
         
-        print("🎤 음성 인식 SubGraph 실행 중...")
+        # print("🎤 음성 인식 SubGraph 실행 중...")
         
         try:
             # Speech Recognition SubGraph 실행
@@ -358,7 +358,7 @@ class VehicleManualAgentSubGraph:
                 audio_file_path=audio_file_path
             )
             
-            print(f"✅ 음성 인식 완료: '{speech_result['final_text']}'")
+            # print(f"✅ 음성 인식 완료: '{speech_result['final_text']}'")
             
             return {
                 "recognized_text": speech_result["final_text"],

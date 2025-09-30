@@ -15,7 +15,7 @@ from langchain_core.documents import Document
 class PerformanceMonitoringHandler(BaseCallbackHandler):
     """성능 모니터링 콜백 핸들러"""
     
-    def __init__(self, enable_detailed_logging: bool = True):
+    def __init__(self, enable_detailed_logging: bool = False):
         super().__init__()
         self.enable_detailed_logging = enable_detailed_logging
         self.session_start_time = None
@@ -176,7 +176,7 @@ class PerformanceMonitoringHandler(BaseCallbackHandler):
 class RealTimeNotificationHandler(BaseCallbackHandler):
     """실시간 알림 콜백 핸들러"""
     
-    def __init__(self, enable_progress_bar: bool = True, enable_notifications: bool = True):
+    def __init__(self, enable_progress_bar: bool = False, enable_notifications: bool = False):
         super().__init__()
         self.enable_progress_bar = enable_progress_bar
         self.enable_notifications = enable_notifications
