@@ -1,7 +1,8 @@
 """
-차량 매뉴얼 RAG 시스템 - 메인 진입점
+차량 매뉴얼 RAG 시스템 - SubGraph 아키텍처 메인 진입점
 
 모듈화된 LangChain/LangGraph 기반 차량 매뉴얼 RAG 에이전트
+SubGraph 아키텍처로 재사용성과 확장성 향상
 """
 
 import time
@@ -19,15 +20,16 @@ from src.utils.callback_handlers import (
 
 
 def main():
-    """메인 실행 함수"""
+    """메인 실행 함수 - SubGraph 아키텍처"""
     print("=" * 60)
-    print("🚗 지능형 차량 어시스턴트")
+    print("🚗 지능형 차량 어시스턴트 - SubGraph 아키텍처")
     print("=" * 60)
     print("👨‍💼 운전자를 위한 실시간 차량 매뉴얼 AI 도우미")
     print("🚨 응급 상황 자동 감지 및 즉시 대응 시스템")
     print("🔍 하이브리드 검색, 쿼리 확장, 재순위화, 맥락 압축 지원")
     print("🤖 Few-shot 프롬프팅으로 향상된 답변 품질")
     print("📊 실시간 성능 모니터링 및 알림 지원")
+    print("🔧 SubGraph 아키텍처로 모듈화 및 재사용성 향상")
     print("=" * 60)
     
     # 콜백 핸들러 초기화
@@ -62,7 +64,6 @@ def main():
         print("📊 성능 모니터링 활성화")
         print("🔔 실시간 알림 활성화")
         print("🔧 SubGraph 모듈화 완료")
-        
         
         # 대화형 모드 안내
         print("\n" + "=" * 60)
@@ -105,7 +106,7 @@ def main():
                     if hasattr(callback, 'reset_session'):
                         callback.reset_session()
                 
-                # 콜백과 함께 쿼리 실행
+                # 콜백과 함께 쿼리 실행 (SubGraph 아키텍처)
                 answer = agent.query(user_input, callbacks=callbacks)
                 
                 print(f"\n💡 답변:\n{answer}")
@@ -124,6 +125,7 @@ def main():
         print("1. .env 파일에 OPENAI_API_KEY가 설정되어 있는지 확인")
         print("2. PDF 파일이 올바른 경로에 있는지 확인")
         print("3. 필요한 Python 패키지들이 설치되어 있는지 확인")
+        print("4. SubGraph 모듈들이 올바르게 초기화되었는지 확인")
 
 
 if __name__ == "__main__":
