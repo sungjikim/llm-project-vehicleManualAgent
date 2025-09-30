@@ -179,13 +179,13 @@ class VehicleManualAgentSubGraph:
         """응급 상황 감지 래퍼 노드"""
         query = state["query"]
         
-        # print("🚨 응급 상황 감지 SubGraph 실행 중...")
+        print("🚨 응급 상황 감지 SubGraph 실행 중...")
         
         try:
             # Emergency Detection SubGraph 실행
             emergency_result = self.emergency_subgraph.invoke(query)
             
-            # print(f"✅ 응급 상황 감지 완료: {emergency_result['is_emergency']}")
+            print(f"✅ 응급 상황 감지 완료: {emergency_result['is_emergency']}")
             
             return {
                 "is_emergency": emergency_result["is_emergency"],
@@ -214,7 +214,7 @@ class VehicleManualAgentSubGraph:
         query = state["query"]
         is_emergency = state.get("is_emergency", False)
         
-        # print("🔍 검색 파이프라인 SubGraph 실행 중...")
+        print("🔍 검색 파이프라인 SubGraph 실행 중...")
         
         try:
             # 응급 상황 데이터 준비
@@ -233,7 +233,7 @@ class VehicleManualAgentSubGraph:
                 emergency_data=emergency_data
             )
             
-            # print(f"✅ 검색 파이프라인 완료: {len(search_result['search_results'])}개 문서")
+            print(f"✅ 검색 파이프라인 완료: {len(search_result['search_results'])}개 문서")
             
             return {
                 "search_strategy": search_result["search_strategy"],
@@ -263,7 +263,7 @@ class VehicleManualAgentSubGraph:
         is_emergency = state.get("is_emergency", False)
         emergency_level = state.get("emergency_level", "NORMAL")
         
-        # print("📝 답변 생성 SubGraph 실행 중...")
+        print("📝 답변 생성 SubGraph 실행 중...")
         
         try:
             # Answer Generation SubGraph 실행
@@ -275,7 +275,7 @@ class VehicleManualAgentSubGraph:
                 emergency_level=emergency_level
             )
             
-            # print(f"✅ 답변 생성 완료: {len(answer_result['final_answer'])}자")
+            print(f"✅ 답변 생성 완료: {len(answer_result['final_answer'])}자")
             
             return {
                 "final_answer": answer_result["final_answer"],
@@ -298,7 +298,7 @@ class VehicleManualAgentSubGraph:
         is_emergency = state.get("is_emergency", False)
         emergency_level = state.get("emergency_level", "NORMAL")
         
-        # print("🚗 주행 상황 처리 SubGraph 실행 중...")
+        print("🚗 주행 상황 처리 SubGraph 실행 중...")
         
         try:
             # Driving Context SubGraph 실행
@@ -309,7 +309,7 @@ class VehicleManualAgentSubGraph:
                 emergency_level=emergency_level
             )
             
-            # print(f"✅ 주행 상황 처리 완료: {driving_result['is_driving']}")
+            print(f"✅ 주행 상황 처리 완료: {driving_result['is_driving']}")
             
             return {
                 "is_driving": driving_result["is_driving"],
@@ -341,7 +341,7 @@ class VehicleManualAgentSubGraph:
         
         # 이미 텍스트 쿼리가 있으면 음성 인식 건너뛰기
         if existing_query and existing_query.strip():
-            # print("📝 텍스트 쿼리 감지 - 음성 인식 건너뛰기")
+            print("📝 텍스트 쿼리 감지 - 음성 인식 건너뛰기")
             return {
                 "recognized_text": "",
                 "speech_confidence": 0.0,
@@ -349,7 +349,7 @@ class VehicleManualAgentSubGraph:
                 "query": existing_query  # 기존 쿼리 유지
             }
         
-        # print("🎤 음성 인식 SubGraph 실행 중...")
+        print("🎤 음성 인식 SubGraph 실행 중...")
         
         try:
             # Speech Recognition SubGraph 실행
@@ -358,7 +358,7 @@ class VehicleManualAgentSubGraph:
                 audio_file_path=audio_file_path
             )
             
-            # print(f"✅ 음성 인식 완료: '{speech_result['final_text']}'")
+            print(f"✅ 음성 인식 완료: '{speech_result['final_text']}'")
             
             return {
                 "recognized_text": speech_result["final_text"],
@@ -397,11 +397,194 @@ class VehicleManualAgentSubGraph:
         
         return workflow.compile()
     
+    def create_emergency_fast_path(self) -> StateGraph:
+        """응급 상황 전용 빠른 경로 - 최소한의 처리로 빠른 응답"""
+        workflow = StateGraph(MainAgentState)
+        
+        # 응급 상황에서는 최소한의 노드만 실행
+        workflow.add_node("speech_recognition", self.speech_recognition_wrapper)
+        workflow.add_node("emergency_detection", self.emergency_detection_wrapper)
+        workflow.add_node("emergency_search", self.emergency_search_wrapper)
+        workflow.add_node("emergency_answer", self.emergency_answer_wrapper)
+        
+        # 빠른 경로: 음성인식 → 응급감지 → 간소검색 → 간소답변
+        workflow.set_entry_point("speech_recognition")
+        workflow.add_edge("speech_recognition", "emergency_detection")
+        workflow.add_edge("emergency_detection", "emergency_search")
+        workflow.add_edge("emergency_search", "emergency_answer")
+        workflow.add_edge("emergency_answer", END)
+        
+        return workflow.compile()
+    
+    def emergency_search_wrapper(self, state: MainAgentState) -> Dict[str, Any]:
+        """응급 상황 전용 간소화된 검색 - 속도 우선"""
+        query = state["query"]
+        
+        print("🚨 응급 상황 검색 - 빠른 키워드 검색 실행")
+        
+        try:
+            # 응급 상황에서는 가장 빠른 BM25 키워드 검색만 사용
+            retriever = self.search_options["bm25_only"]
+            docs = retriever.invoke(query)
+            
+            # 최대 3개 문서만 사용 (속도 우선)
+            search_results = [
+                {
+                    "content": doc.page_content,
+                    "page": doc.metadata.get("page", 0),
+                    "source": doc.metadata.get("source", ""),
+                    "score": 1.0  # 응급 상황에서는 점수 계산 생략
+                }
+                for doc in docs[:3]  # 3개로 제한
+            ]
+            
+            # 페이지 참조 추출
+            page_references = list(set([
+                result.get("page", 0) for result in search_results if result.get("page", 0) > 0
+            ]))
+            
+            print(f"⚡ 응급 검색 완료: {len(search_results)}개 문서, {len(page_references)}개 페이지")
+            
+            return {
+                "search_strategy": "emergency_fast",
+                "search_method": "bm25_only",
+                "compression_method": "none",  # 압축 생략
+                "confidence_score": 0.9,  # 고정 신뢰도
+                "search_results": search_results,
+                "page_references": page_references
+            }
+            
+        except Exception as e:
+            print(f"❌ 응급 검색 오류: {str(e)}")
+            return {
+                "search_strategy": "emergency_fast",
+                "search_method": "bm25_only",
+                "compression_method": "none",
+                "confidence_score": 0.5,
+                "search_results": [{"content": f"응급 검색 중 오류: {str(e)}", "page": 0, "score": 0.0}],
+                "page_references": []
+            }
+    
+    def emergency_answer_wrapper(self, state: MainAgentState) -> Dict[str, Any]:
+        """응급 상황 전용 간소화된 답변 생성 - 속도 우선"""
+        query = state["query"]
+        search_results = state.get("search_results", [])
+        page_references = state.get("page_references", [])
+        emergency_level = state.get("emergency_level", "HIGH")
+        
+        print(f"🚨 응급 답변 생성 - {emergency_level} 수준")
+        
+        try:
+            # 간소화된 컨텍스트 구성 (최대 2개 문서, 각 200자만)
+            context_parts = []
+            for i, result in enumerate(search_results[:2], 1):
+                content = result.get("content", "")
+                page = result.get("page", 0)
+                
+                # 200자로 제한
+                if len(content) > 200:
+                    content = content[:200] + "..."
+                
+                if page > 0:
+                    context_parts.append(f"[참고 {i}] (페이지 {page})\n{content}")
+                else:
+                    context_parts.append(f"[참고 {i}]\n{content}")
+            
+            context = "\n\n".join(context_parts)
+            
+            # 간소화된 응급 프롬프트 (ChatPromptTemplate 사용)
+            from langchain_core.prompts import ChatPromptTemplate
+            from langchain_core.output_parsers import StrOutputParser
+            
+            emergency_prompt = ChatPromptTemplate.from_messages([
+                ("system", """응급 상황입니다. 다음 정보를 바탕으로 즉시 실행 가능한 안전 조치만 간단히 제시하세요.
+        
+답변 형식:
+🚨 즉시 조치: [핵심 행동 1-2개]
+⚠️ 안전 경고: [중요한 주의사항]
+📞 연락처: [필요시 응급 서비스]
+
+응급 수준별 대응:
+- CRITICAL: 생명 위험, 즉시 119 신고
+- HIGH: 즉시 안전 조치 필요
+- MEDIUM: 신속한 대응 필요
+- LOW: 주의 필요"""),
+                ("human", """질문: {query}
+참고 정보: {context}
+응급 수준: {emergency_level}
+
+답변:""")
+            ])
+            
+            # LLM 호출 (간소화된 프롬프트)
+            answer_chain = emergency_prompt | self.llm | StrOutputParser()
+            final_answer = answer_chain.invoke({
+                "query": query, 
+                "context": context,
+                "emergency_level": emergency_level
+            })
+            
+            # 응급 상황 헤더 추가
+            emergency_icons = {
+                "CRITICAL": "🔥",
+                "HIGH": "🚨", 
+                "MEDIUM": "⚠️",
+                "LOW": "🔍"
+            }
+            icon = emergency_icons.get(emergency_level, "🚨")
+            emergency_header = f"{icon} **{emergency_level} 응급 상황**\n\n"
+            
+            # 응급 상황 경고 추가
+            if emergency_level == "CRITICAL":
+                emergency_warning = "\n\n🚨 **생명 위험 상황입니다. 즉시 119에 신고하세요.**"
+            elif emergency_level == "HIGH":
+                emergency_warning = "\n\n⚠️ **즉시 안전 조치가 필요합니다. 전문가에게 연락하세요.**"
+            else:
+                emergency_warning = "\n\n⚠️ **신속한 대응이 필요합니다.**"
+            
+            final_answer_with_header = emergency_header + final_answer + emergency_warning
+            
+            print(f"✅ 응급 답변 생성 완료: {len(final_answer_with_header)}자")
+            
+            return {
+                "final_answer": final_answer_with_header,
+                "confidence_score": 0.85,  # 고정 신뢰도 (평가 생략)
+                "evaluation_details": None  # 평가 생략
+            }
+            
+        except Exception as e:
+            print(f"❌ 응급 답변 생성 오류: {str(e)}")
+            return {
+                "final_answer": f"🚨 응급 상황 답변 생성 중 오류가 발생했습니다: {str(e)}\n\n⚠️ 즉시 안전한 곳에 정차하고 전문가에게 연락하세요.",
+                "confidence_score": 0.5,
+                "evaluation_details": None
+            }
+    
     def query(self, user_query: str = None, audio_data: bytes = None, 
               audio_file_path: str = None, callbacks=None) -> str:
-        """사용자 쿼리 처리 - SubGraph 아키텍처 (음성 인식 지원)"""
+        """사용자 쿼리 처리 - 응급 상황 감지 후 적절한 워크플로우 선택"""
         try:
-            graph = self.create_graph()
+            # 1. 먼저 빠른 응급 상황 감지 (텍스트 쿼리가 있는 경우만)
+            if user_query and user_query.strip():
+                # LLM 기반 응급 상황 감지 사용
+                from ..utils.llm_emergency_detector import LLMEmergencyDetector
+                llm_emergency_detector = LLMEmergencyDetector()
+                emergency_result = llm_emergency_detector.detect_emergency(user_query)
+                
+                # CRITICAL 또는 HIGH 응급 상황이면 빠른 경로 사용
+                if emergency_result["is_emergency"] and emergency_result["priority_level"] in ["CRITICAL", "HIGH"]:
+                    print(f"🚨 응급 상황 감지 ({emergency_result['priority_level']}) - 빠른 경로 실행")
+                    graph = self.create_emergency_fast_path()
+                    use_emergency_path = True
+                else:
+                    print("📝 일반 질문 - 전체 워크플로우 실행")
+                    graph = self.create_graph()
+                    use_emergency_path = False
+            else:
+                # 음성 인식만 있는 경우는 전체 워크플로우 사용
+                print("🎤 음성 입력 - 전체 워크플로우 실행")
+                graph = self.create_graph()
+                use_emergency_path = False
             
             # 초기 상태 설정
             initial_state = {
@@ -437,6 +620,15 @@ class VehicleManualAgentSubGraph:
                 # 평가 관련
                 "evaluation_details": None
             }
+            
+            # 응급 경로 사용 시 응급 상황 정보 미리 설정
+            if use_emergency_path and user_query:
+                initial_state.update({
+                    "is_emergency": True,
+                    "emergency_level": emergency_result["priority_level"],
+                    "emergency_score": emergency_result["total_score"],
+                    "emergency_analysis": emergency_result
+                })
             
             # 콜백이 있으면 설정에 포함
             config = {}

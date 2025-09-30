@@ -7,6 +7,7 @@ from langgraph.graph import StateGraph, START, END
 
 from ...models.subgraph_states import DrivingContextState
 from ...utils.driving_context_detector import DrivingContextDetector
+from ...utils.llm_emergency_detector import LLMEmergencyDetector
 
 
 class DrivingContextSubGraph:
@@ -14,6 +15,7 @@ class DrivingContextSubGraph:
     
     def __init__(self):
         self.driving_detector = DrivingContextDetector()
+        self.llm_detector = LLMEmergencyDetector()
     
     def driving_context_processor(self, state: DrivingContextState) -> Dict[str, Any]:
         """주행 중 상황 감지 및 답변 압축 노드"""
@@ -42,8 +44,8 @@ class DrivingContextSubGraph:
                     "driving_indicators": [f"응급상황({emergency_level})"]
                 }
             else:
-                # 일반 상황에서만 상세 주행 분석 수행
-                driving_analysis = self.driving_detector.detect_driving_context(query)
+                # LLM 기반 주행 상황 분석 수행
+                driving_analysis = self.llm_detector.detect_driving_context(query)
                 is_driving = driving_analysis["is_driving"]
                 confidence = driving_analysis["confidence"]
                 urgency_level = driving_analysis["urgency_level"]

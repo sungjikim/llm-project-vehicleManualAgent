@@ -93,75 +93,101 @@ class EmergencyDetector:
         }
     
     def detect_emergency(self, query: str) -> Dict[str, Any]:
-        """응급 상황 감지 및 분석"""
+        """응급 상황 감지 및 분석 - 최적화된 빠른 버전"""
         query_lower = query.lower()
+        
+        # 빠른 응급 키워드 체크 (CRITICAL/HIGH 우선)
+        critical_high_keywords = []
+        for category, data in self.emergency_keywords.items():
+            if data["priority"] in ["CRITICAL", "HIGH"]:
+                critical_high_keywords.extend(data["keywords"])
         
         # 정비/교체 관련 키워드 (응급도 감소)
         maintenance_keywords = [
             "교체", "갈아", "바꿔", "주기", "언제", "시기", "정비", "점검", 
-            "관리", "유지", "보수", "서비스", "수리"
+            "관리", "유지", "보수", "서비스", "수리", "방법", "알려줘", "알려주세요"
         ]
         
         # 기술/시스템 문의 키워드 (응급도 감소)
-        # 주의: "어떻게"는 응급 상황에서도 자주 사용되므로 제외
         technology_keywords = [
             "시스템", "기능", "설정", "사용법", "작동", "뭔가요", "무엇", 
-            "설명", "알려주세요", "궁금해요", "차이점", "원리", "방법"
+            "설명", "궁금해요", "차이점", "원리", "방법", "알려줘", "알려주세요"
         ]
         
         # 정비 관련 질문인지 확인
         is_maintenance_question = any(keyword in query_lower for keyword in maintenance_keywords)
         
-        # 기술 문의인지 확인 (기존 키워드 + 기술 지표 키워드)
+        # 기술 문의인지 확인
         is_technology_question = (
             any(keyword in query_lower for keyword in technology_keywords) or
             any(keyword in query_lower for keyword in self.technology_indicators)
         )
         
-        # 응급도 점수 계산
+        # CRITICAL/HIGH 키워드가 있으면 즉시 응급 상황으로 판정 (단, 정비/기술 문의가 아닌 경우만)
+        for keyword in critical_high_keywords:
+            if keyword in query_lower:
+                # 해당 카테고리 찾기
+                for category, data in self.emergency_keywords.items():
+                    if keyword in data["keywords"] and data["priority"] in ["CRITICAL", "HIGH"]:
+                        # 정비/기술 문의인 경우 응급 상황이 아님
+                        if is_maintenance_question or is_technology_question:
+                            # 일반 질문으로 처리
+                            break
+                        
+                        return {
+                            "is_emergency": True,
+                            "emergency_score": data["weight"],
+                            "urgency_score": 0,
+                            "total_score": data["weight"],
+                            "priority_level": data["priority"],
+                            "detected_categories": [{
+                                "category": category,
+                                "keyword": keyword,
+                                "weight": data["weight"],
+                                "original_weight": data["weight"],
+                                "priority": data["priority"],
+                                "maintenance_adjusted": False
+                            }],
+                            "urgency_expressions": [],
+                            "search_strategy": self.emergency_search_strategies.get(data["priority"])
+                        }
+        
+        
+        # 응급도 점수 계산 (간소화)
         emergency_score = 0
         detected_categories = []
         priority_level = "NORMAL"
-        has_emergency_keywords = False  # 응급 키워드 존재 여부
+        has_emergency_keywords = False
         
-        # 1. 응급 키워드 검사
+        # 1. 응급 키워드 검사 (CRITICAL/HIGH 제외)
         for category, data in self.emergency_keywords.items():
-            for keyword in data["keywords"]:
-                if keyword in query_lower:
-                    has_emergency_keywords = True
-                    weight = data["weight"]
-                    
-                    # 응급 키워드가 있으면 기술문의/정비문의 여부와 관계없이 원래 가중치 적용
-                    # 단, CRITICAL/HIGH가 아닌 경우에만 약간의 조정
-                    if is_maintenance_question or is_technology_question:
-                        if data["priority"] in ["CRITICAL", "HIGH"]:
-                            # CRITICAL/HIGH는 응급 키워드가 있으면 그대로 유지
-                            weight = data["weight"]
-                        else:
-                            # MEDIUM/LOW는 약간 감소 (하지만 1/4이 아닌 1/2로 완화)
+            if data["priority"] not in ["CRITICAL", "HIGH"]:  # 이미 위에서 처리됨
+                for keyword in data["keywords"]:
+                    if keyword in query_lower:
+                        has_emergency_keywords = True
+                        weight = data["weight"]
+                        
+                        # 정비/기술 문의인 경우 가중치 조정
+                        if is_maintenance_question or is_technology_question:
                             weight = max(1, weight // 2)
-                    
-                    emergency_score += weight
-                    detected_categories.append({
-                        "category": category,
-                        "keyword": keyword,
-                        "weight": weight,
-                        "original_weight": data["weight"],
-                        "priority": data["priority"],
-                        "maintenance_adjusted": is_maintenance_question and data["priority"] not in ["CRITICAL", "HIGH"]
-                    })
-                    
-                    # 최고 우선순위 업데이트
-                    if data["priority"] == "CRITICAL":
-                        priority_level = "CRITICAL"
-                    elif data["priority"] == "HIGH" and priority_level != "CRITICAL":
-                        priority_level = "HIGH"
-                    elif data["priority"] == "MEDIUM" and priority_level not in ["CRITICAL", "HIGH"]:
-                        priority_level = "MEDIUM"
-                    elif data["priority"] == "LOW" and priority_level == "NORMAL":
-                        priority_level = "LOW"
+                        
+                        emergency_score += weight
+                        detected_categories.append({
+                            "category": category,
+                            "keyword": keyword,
+                            "weight": weight,
+                            "original_weight": data["weight"],
+                            "priority": data["priority"],
+                            "maintenance_adjusted": is_maintenance_question or is_technology_question
+                        })
+                        
+                        # 우선순위 업데이트
+                        if data["priority"] == "MEDIUM" and priority_level == "NORMAL":
+                            priority_level = "MEDIUM"
+                        elif data["priority"] == "LOW" and priority_level == "NORMAL":
+                            priority_level = "LOW"
         
-        # 2. 긴급성 표현 검사
+        # 2. 긴급성 표현 검사 (간소화)
         urgency_score = 0
         urgency_expressions_found = []
         
@@ -178,30 +204,20 @@ class EmergencyDetector:
         # 총 점수 계산
         total_score = emergency_score + urgency_score
         
-        # 기술 문의 강도 확인 (기술 지표 키워드 개수)
-        technology_indicator_count = sum(1 for keyword in self.technology_indicators if keyword in query_lower)
-        is_strong_technology_question = technology_indicator_count >= 1  # 1개 이상이면 강한 기술 문의로 간주
-        
-        # 응급 상황 판정 
-        # 응급 키워드가 있으면 우선적으로 응급 상황으로 판단
+        # 응급 상황 판정 (간소화)
         if has_emergency_keywords:
-            # 강한 기술 문의인 경우 특별 처리
-            if is_strong_technology_question and priority_level not in ["CRITICAL"]:
-                # CRITICAL이 아닌 경우에만 기술 문의로 간주
+            # 기술 문의인 경우 특별 처리
+            if is_technology_question and priority_level not in ["CRITICAL", "HIGH"]:
                 is_emergency = False
                 priority_level = "NORMAL"
-            elif priority_level in ["CRITICAL", "HIGH"]:
-                # CRITICAL/HIGH는 무조건 응급 상황
-                is_emergency = True
             else:
-                # MEDIUM/LOW는 점수 기반 판정 (하지만 임계값 낮춤)
+                # 점수 기반 판정
                 threshold = 4 if (is_maintenance_question or is_technology_question) else 3
                 is_emergency = total_score >= threshold
         else:
-            # 응급 키워드가 없으면 기존 로직
-            is_non_emergency_question = is_maintenance_question or is_technology_question
-            threshold = 10 if is_non_emergency_question else 6
-            is_emergency = total_score >= threshold
+            # 응급 키워드가 없으면 일반 질문
+            is_emergency = False
+            priority_level = "NORMAL"
         
         return {
             "is_emergency": is_emergency,

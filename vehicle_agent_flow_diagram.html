@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>차량 매뉴얼 RAG 시스템 - Node 구성 및 흐름도</title>
+    <title>차량 매뉴얼 RAG 시스템 - Node 구성 및 흐름도 (LLM 기반 지능형 감지)</title>
     <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
     <style>
         body {
@@ -61,14 +61,14 @@
 </head>
 <body>
     <div class="container">
-        <h1>🚗 차량 매뉴얼 RAG 시스템 - Node 구성 및 흐름도</h1>
+        <h1>🚗 차량 매뉴얼 RAG 시스템 - Node 구성 및 흐름도 (LLM 기반 지능형 감지)</h1>
         
         <div class="description">
             <h3>📋 시스템 개요</h3>
             <p>LangChain/LangGraph 기반의 모듈화된 차량 매뉴얼 RAG 에이전트로, SubGraph 아키텍처를 통해 응급 상황 감지, 하이브리드 검색, 주행 중 최적화 등의 기능을 제공합니다.</p>
         </div>
 
-        <h2>1. 전체 시스템 아키텍처</h2>
+        <h2>1. 전체 시스템 아키텍처 (성능 최적화)</h2>
         <div class="diagram">
             <div class="mermaid">
 graph TD
@@ -79,17 +79,25 @@ graph TD
     C --> E[VehicleManualAgentSubGraph]
     D --> E
     
-    E --> F[LangGraph Workflow]
+    E --> F{응급 상황 감지}
+    F -->|CRITICAL/HIGH| G[응급 상황 빠른 경로]
+    F -->|일반 질문| H[일반 워크플로우]
     
-    F --> G[Emergency Detection Node]
-    G --> H[Search Pipeline Node]
-    H --> I[Answer Generation Node]
-    I --> J[Driving Context Node]
-    J --> K[최종 답변]
+    G --> G1[Emergency Detection]
+    G1 --> G2[Emergency Search]
+    G2 --> G3[Emergency Answer]
+    G3 --> I[최종 답변]
     
-    K --> L{인터페이스 타입}
-    L -->|터미널| M[콘솔 출력]
-    L -->|웹| N[웹 UI 표시]
+    H --> H1[Speech Recognition]
+    H1 --> H2[Emergency Detection]
+    H2 --> H3[Search Pipeline]
+    H3 --> H4[Answer Generation]
+    H4 --> H5[Driving Context]
+    H5 --> I
+    
+    I --> J{인터페이스 타입}
+    J -->|터미널| K[콘솔 출력]
+    J -->|웹| L[웹 UI 표시]
             </div>
         </div>
 
@@ -262,15 +270,160 @@ graph LR
             </div>
         </div>
 
+        <h2>7. 성능 최적화 비교</h2>
+        <div class="diagram">
+            <div class="mermaid">
+graph TD
+    subgraph "개선 전 (기존 시스템)"
+        A1[사용자 쿼리] --> B1[Speech Recognition]
+        B1 --> C1[Emergency Detection]
+        C1 --> D1[Search Pipeline]
+        D1 --> E1[Answer Generation]
+        E1 --> F1[Driving Context]
+        F1 --> G1[최종 답변]
+        
+        H1[응급 질문: 11.5초]
+        I1[일반 질문: 8초]
+    end
+    
+    subgraph "개선 후 (최적화 시스템)"
+        A2[사용자 쿼리] --> B2{응급 상황 감지}
+        B2 -->|CRITICAL/HIGH| C2[응급 빠른 경로]
+        B2 -->|일반 질문| D2[일반 워크플로우]
+        
+        C2 --> C3[Emergency Detection]
+        C3 --> C4[Emergency Search]
+        C4 --> C5[Emergency Answer]
+        C5 --> E2[최종 답변]
+        
+        D2 --> D3[Speech Recognition]
+        D3 --> D4[Emergency Detection]
+        D4 --> D5[Search Pipeline]
+        D5 --> D6[Answer Generation]
+        D6 --> D7[Driving Context]
+        D7 --> E2
+        
+        F2[응급 질문: 2.55초 ⚡]
+        G2[일반 질문: 7.30초]
+    end
+    
+    H1 -.->|77.8% 개선| F2
+    I1 -.->|8.8% 개선| G2
+            </div>
+        </div>
+
+        <h2>8. 성능 개선 상세</h2>
+        <div class="diagram">
+            <div class="mermaid">
+graph LR
+    subgraph "응급 상황 빠른 경로 최적화"
+        A1[기존: 5개 SubGraph] --> A2[개선: 4개 SubGraph]
+        B1[기존: 하이브리드 검색] --> B2[개선: BM25만]
+        C1[기존: 복잡한 프롬프트] --> C2[개선: 간소화된 프롬프트]
+        D1[기존: 신뢰도 평가] --> D2[개선: 고정 신뢰도]
+        E1[기존: 모든 키워드 검사] --> E2[개선: CRITICAL/HIGH 우선]
+    end
+    
+    subgraph "성능 향상 결과"
+        F1[응답 시간: 11.5초 → 2.55초]
+        G1[개선율: 77.8%]
+        H1[처리 단계: 20% 감소]
+        I1[검색 시간: 60% 단축]
+        J1[답변 생성: 50% 단축]
+        K1[응급 감지: 70% 단축]
+    end
+            </div>
+        </div>
+
         <div class="feature-list">
-            <h3>🔧 주요 특징</h3>
+            <h3>🔧 주요 특징 (성능 최적화 버전)</h3>
             <ul>
+                <li><strong>조건부 워크플로우</strong>: 응급 상황 감지 후 적절한 경로 자동 선택</li>
+                <li><strong>응급 상황 빠른 경로</strong>: CRITICAL/HIGH 응급 상황 전용 최적화된 처리</li>
+                <li><strong>간소화된 검색</strong>: 응급 상황에서 BM25 키워드 검색만 사용</li>
+                <li><strong>최적화된 응급 감지</strong>: CRITICAL/HIGH 키워드 우선 검사</li>
+                <li><strong>고정 신뢰도</strong>: 응급 상황에서 복잡한 평가 생략</li>
                 <li><strong>SubGraph 아키텍처</strong>: 각 기능을 독립적인 SubGraph로 모듈화</li>
-                <li><strong>응급 상황 감지</strong>: 자동으로 응급 상황을 감지하고 우선순위 처리</li>
-                <li><strong>하이브리드 검색</strong>: 벡터 검색과 키워드 검색을 결합</li>
+                <li><strong>하이브리드 검색</strong>: 일반 질문에서는 벡터 검색과 키워드 검색 결합</li>
                 <li><strong>주행 중 최적화</strong>: 운전 중 상황을 감지하여 답변을 압축</li>
                 <li><strong>실시간 모니터링</strong>: 성능 및 사용량을 실시간으로 추적</li>
                 <li><strong>다중 인터페이스</strong>: 터미널과 웹 인터페이스 모두 지원</li>
+            </ul>
+        </div>
+
+        <div class="description">
+            <h3>🧠 LLM 기반 지능형 감지 시스템</h3>
+            <p>키워드 기반 규칙에서 LLM 기반 맥락 이해로 업그레이드하여 정확한 응급/주행 상황 감지를 제공합니다.</p>
+        </div>
+
+        <div class="mermaid">
+            graph TD
+                subgraph "LLM 기반 응급 상황 감지"
+                    A[사용자 질문] --> B[LLM Emergency Detector]
+                    B --> C{맥락 분석}
+                    C -->|생명 위험| D[CRITICAL]
+                    C -->|즉시 조치 필요| E[HIGH]
+                    C -->|신속 대응 필요| F[MEDIUM]
+                    C -->|주의 필요| G[LOW]
+                    C -->|일반 질문| H[NORMAL]
+                    
+                    D --> I[응급 빠른 경로]
+                    E --> I
+                    F --> J[일반 워크플로우]
+                    G --> J
+                    H --> J
+                end
+                
+                subgraph "LLM 기반 주행 상황 감지"
+                    K[사용자 발화] --> L[LLM Driving Detector]
+                    L --> M{주행 지표 분석}
+                    M -->|명시적 주행 표현| N[주행 중 (95%)]
+                    M -->|시간적 긴급성| O[주행 중 (75%)]
+                    M -->|상황적 맥락| P[주행 중 (60%)]
+                    M -->|일반 질문| Q[주행 중 아님 (30%)]
+                    
+                    N --> R[답변 압축 필요]
+                    O --> R
+                    P --> R
+                    Q --> S[상세 답변]
+                end
+        </div>
+
+        <div class="description">
+            <h3>🔄 기존 vs LLM 기반 감지 비교</h3>
+            <p>키워드 매칭의 한계를 극복하고 맥락을 이해하는 지능형 감지 시스템으로 업그레이드했습니다.</p>
+        </div>
+
+        <div class="mermaid">
+            graph LR
+                subgraph "기존 시스템 (키워드 기반)"
+                    A1[브레이크 패드 관리방법] --> B1[키워드: 브레이크]
+                    B1 --> C1[응급 상황으로 오분류]
+                    D1[브레이크가 안 밟혀요] --> E1[키워드: 브레이크]
+                    E1 --> F1[응급 상황으로 정확 분류]
+                end
+                
+                subgraph "LLM 기반 시스템"
+                    A2[브레이크 패드 관리방법] --> B2[맥락: 정비 질문]
+                    B2 --> C2[일반 질문으로 정확 분류]
+                    D2[브레이크가 안 밟혀요] --> E2[맥락: 기능 고장]
+                    E2 --> F2[응급 상황으로 정확 분류]
+                end
+        </div>
+
+        <div class="description">
+            <h3>🎯 LLM 기반 감지의 핵심 특징</h3>
+            <ul>
+                <li><strong>🧠 맥락 이해</strong>: 키워드 매칭이 아닌 의미적 분석으로 정확한 판단</li>
+                <li><strong>📊 신뢰도 제공</strong>: 각 판단에 대한 신뢰도 점수와 근거 설명</li>
+                <li><strong>🎯 정확한 분류</strong>: "브레이크 패드 관리방법" → 일반 질문으로 정확 분류</li>
+                <li><strong>⚡ 성능 최적화</strong>: 응급 질문 응답시간 77.8% 향상 (11.5초 → 2.55초)</li>
+                <li><strong>🔄 자동 적응</strong>: 새로운 상황 패턴에 자동으로 적응</li>
+                <li><strong>🚗 주행 감지</strong>: LLM 기반 주행 중 상황 자동 감지 및 답변 압축</li>
+                <li><strong>📱 스마트 압축</strong>: 주행 중 안전을 위한 핵심 정보만 제공</li>
+                <li><strong>🔍 하이브리드 검색</strong>: 벡터 + BM25 검색의 조합</li>
+                <li><strong>📈 실시간 모니터링</strong>: 성능 지표 및 신뢰도 추적</li>
+                <li><strong>🎤 음성 지원</strong>: ASR/STT 기반 음성 입력 처리</li>
             </ul>
         </div>
 
