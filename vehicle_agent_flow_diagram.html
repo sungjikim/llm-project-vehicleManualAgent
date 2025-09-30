@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>차량 매뉴얼 RAG 시스템 - Node 구성 및 흐름도</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        h2 {
+            color: #34495e;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+            margin-top: 40px;
+        }
+        .diagram {
+            margin: 30px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #fafafa;
+        }
+        .description {
+            background-color: #e8f4f8;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .feature-list {
+            background-color: #f0f8f0;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .feature-list ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .feature-list li {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚗 차량 매뉴얼 RAG 시스템 - Node 구성 및 흐름도</h1>
+        
+        <div class="description">
+            <h3>📋 시스템 개요</h3>
+            <p>LangChain/LangGraph 기반의 모듈화된 차량 매뉴얼 RAG 에이전트로, SubGraph 아키텍처를 통해 응급 상황 감지, 하이브리드 검색, 주행 중 최적화 등의 기능을 제공합니다.</p>
+        </div>
+
+        <h2>1. 전체 시스템 아키텍처</h2>
+        <div class="diagram">
+            <div class="mermaid">
+graph TD
+    A[사용자 입력] --> B{인터페이스 선택}
+    B -->|터미널| C[Terminal Interface]
+    B -->|웹| D[Gradio Interface]
+    
+    C --> E[VehicleManualAgentSubGraph]
+    D --> E
+    
+    E --> F[LangGraph Workflow]
+    
+    F --> G[Speech Recognition Node]
+    G --> H[Emergency Detection Node]
+    H --> I[Search Pipeline Node]
+    I --> J[Answer Generation Node]
+    J --> K[Driving Context Node]
+    K --> L[최종 답변]
+    
+    L --> M{인터페이스 타입}
+    M -->|터미널| N[콘솔 출력]
+    M -->|웹| O[웹 UI 표시]
+            </div>
+        </div>
+
+        <h2>2. SubGraph 상세 구조</h2>
+        <div class="diagram">
+            <div class="mermaid">
+graph TD
+    subgraph "Main Agent (VehicleManualAgentSubGraph)"
+        A[사용자 쿼리] --> B[Speech Recognition Wrapper]
+        B --> C[Emergency Detection Wrapper]
+        C --> D[Search Pipeline Wrapper]
+        D --> E[Answer Generation Wrapper]
+        E --> F[Driving Context Wrapper]
+        F --> G[최종 답변]
+    end
+    
+    subgraph "Speech Recognition SubGraph"
+        B1[Audio Data Processing]
+        B2[DummyASR Transcription]
+        B3[Text Validation]
+        B1 --> B2 --> B3
+    end
+    
+    subgraph "Emergency Detection SubGraph"
+        C1[Emergency Classifier]
+        C2[Priority Level Analysis]
+        C3[Search Strategy Selection]
+        C1 --> C2 --> C3
+    end
+    
+    subgraph "Search Pipeline SubGraph"
+        D1[Query Analyzer]
+        D2[Search Method Selector]
+        D3[Document Retrieval]
+        D4[Re-ranking/Compression]
+        D1 --> D2 --> D3 --> D4
+    end
+    
+    subgraph "Answer Generation SubGraph"
+        E1[Context Builder]
+        E2[Answer Generator]
+        E3[Answer Evaluator]
+        E1 --> E2 --> E3
+    end
+    
+    subgraph "Driving Context SubGraph"
+        F1[Driving Context Detector]
+        F2[Answer Compressor]
+        F3[Final Answer Formatter]
+        F1 --> F2 --> F3
+    end
+    
+    B --> B1
+    C --> C1
+    D --> D1
+    E --> E1
+    F --> F1
+            </div>
+        </div>
+
+        <h2>3. 검색 파이프라인 상세 흐름</h2>
+        <div class="diagram">
+            <div class="mermaid">
+graph TD
+    A[사용자 쿼리] --> B{응급 상황?}
+    
+    B -->|Yes| C[응급 모드]
+    B -->|No| D[일반 모드]
+    
+    C --> E[Hybrid Keyword Search]
+    D --> F[Query Analysis]
+    
+    F --> G{검색 전략 선택}
+    G -->|General| H[Hybrid Semantic]
+    G -->|Specific| I[Vector Only]
+    G -->|Keyword| J[BM25 Only]
+    G -->|Multi-query| K[Multi Query]
+    
+    E --> L[Document Retrieval]
+    H --> L
+    I --> L
+    J --> L
+    K --> L
+    
+    L --> M{재순위화/압축?}
+    M -->|Yes| N[Cross-Encoder Reranking]
+    M -->|No| O[Raw Results]
+    
+    N --> P[Contextual Compression]
+    O --> Q[Search Results]
+    P --> Q
+            </div>
+        </div>
+
+        <h2>4. 콜백 시스템</h2>
+        <div class="diagram">
+            <div class="mermaid">
+graph TD
+    A[사용자 쿼리] --> B[Performance Monitoring Handler]
+    A --> C[Real-time Notification Handler]
+    A --> D[Alert Handler]
+    
+    B --> E[실행 시간 측정]
+    B --> F[토큰 사용량 추적]
+    B --> G[성능 통계 수집]
+    
+    C --> H[진행 상황 표시]
+    C --> I[실시간 알림]
+    
+    D --> J[토큰 제한 모니터링]
+    D --> K[비용 제한 모니터링]
+    D --> L[알림 발송]
+    
+    E --> M[성능 리포트]
+    F --> M
+    G --> M
+    
+    H --> N[사용자 피드백]
+    I --> N
+    
+    J --> O[사용량 경고]
+    K --> O
+    L --> O
+            </div>
+        </div>
+
+        <h2>5. 인터페이스 구조</h2>
+        <div class="diagram">
+            <div class="mermaid">
+graph TD
+    subgraph "Terminal Interface"
+        A1[run_terminal_interface]
+        A2[사용자 입력 대기]
+        A3[에이전트 쿼리 실행]
+        A4[결과 출력]
+        A5[통계 표시]
+        A1 --> A2 --> A3 --> A4 --> A5
+    end
+    
+    subgraph "Gradio Interface"
+        B1[GradioVehicleChatbot]
+        B2[웹 UI 생성]
+        B3[채팅 인터페이스]
+        B4[사이드바 정보]
+        B5[예시 질문 버튼]
+        B6[통계 표시]
+        B1 --> B2
+        B2 --> B3
+        B2 --> B4
+        B2 --> B5
+        B2 --> B6
+    end
+    
+    A3 --> C[VehicleManualAgentSubGraph]
+    B3 --> C
+            </div>
+        </div>
+
+        <h2>6. 데이터 흐름</h2>
+        <div class="diagram">
+            <div class="mermaid">
+graph LR
+    A[PDF 문서] --> B[Document Loader]
+    B --> C[Vector Store]
+    B --> D[BM25 Index]
+    
+    C --> E[Semantic Search]
+    D --> F[Keyword Search]
+    
+    E --> G[Hybrid Retriever]
+    F --> G
+    
+    G --> H[Search Results]
+    H --> I[Re-ranking]
+    I --> J[Context Compression]
+    J --> K[Answer Generation]
+    K --> L[Driving Context Processing]
+    L --> M[Final Answer]
+            </div>
+        </div>
+
+        <div class="feature-list">
+            <h3>🔧 주요 특징</h3>
+            <ul>
+                <li><strong>SubGraph 아키텍처</strong>: 각 기능을 독립적인 SubGraph로 모듈화</li>
+                <li><strong>응급 상황 감지</strong>: 자동으로 응급 상황을 감지하고 우선순위 처리</li>
+                <li><strong>하이브리드 검색</strong>: 벡터 검색과 키워드 검색을 결합</li>
+                <li><strong>주행 중 최적화</strong>: 운전 중 상황을 감지하여 답변을 압축</li>
+                <li><strong>음성 인식 지원</strong>: 오디오 입력을 텍스트로 변환</li>
+                <li><strong>실시간 모니터링</strong>: 성능 및 사용량을 실시간으로 추적</li>
+                <li><strong>다중 인터페이스</strong>: 터미널과 웹 인터페이스 모두 지원</li>
+            </ul>
+        </div>
+
+        <div class="description">
+            <h3>📝 사용법</h3>
+            <p><strong>터미널 모드:</strong> <code>python main.py</code></p>
+            <p><strong>웹 모드:</strong> <code>python main.py --gradio</code></p>
+            <p><strong>포트 변경:</strong> <code>python main.py --gradio --port 8080</code></p>
+        </div>
+    </div>
+
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            flowchart: {
+                useMaxWidth: true,
+                htmlLabels: true
+            }
+        });
+    </script>
+</body>
+</html>
