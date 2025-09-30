@@ -2,4 +2,4 @@
 Agents module
 """
 
-from .vehicle_agent import VehicleManualAgent
+from .vehicle_agent_subgraph import VehicleManualAgentSubGraph

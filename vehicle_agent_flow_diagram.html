@@ -149,7 +149,7 @@ graph TD
             </div>
         </div>
 
-        <h2>3. 검색 파이프라인 상세 흐름</h2>
+        <h2>3. 검색 파이프라인 상세 흐름 (실제 구현 기반)</h2>
         <div class="diagram">
             <div class="mermaid">
 graph TD
@@ -158,29 +158,102 @@ graph TD
     B -->|Yes| C[응급 모드]
     B -->|No| D[일반 모드]
     
-    C --> E[Hybrid Keyword Search]
-    D --> F[Query Analysis]
+    C --> E[Hybrid Keyword Search<br/>BM25 Only]
+    D --> F[LLM 쿼리 분석]
     
-    F --> G{검색 전략 선택}
-    G -->|General| H[Hybrid Semantic]
-    G -->|Specific| I[Vector Only]
-    G -->|Keyword| J[BM25 Only]
-    G -->|Multi-query| K[Multi Query]
+    F --> G[Few-shot 분석 결과]
+    G --> H{키워드 규칙 감지?}
     
-    E --> L[Document Retrieval]
-    H --> L
-    I --> L
-    J --> L
-    K --> L
+    H -->|교체/문제/고장/이상| I[expanded_query<br/>강제 선택]
+    H -->|복잡한 질문| J[multi_query<br/>강제 선택]
+    H -->|일반| K[LLM 분석 결과 사용]
     
-    L --> M{재순위화/압축?}
-    M -->|Yes| N[Cross-Encoder Reranking]
-    M -->|No| O[Raw Results]
+    I --> L[전문 용어 확장<br/>+ 하이브리드 검색]
+    J --> M[3개 관점 쿼리 생성<br/>+ 벡터 검색]
+    K --> N[LLM 선택 방법 사용]
     
-    N --> P[Contextual Compression]
-    O --> Q[Search Results]
-    P --> Q
+    L --> O[Document Retrieval]
+    M --> O
+    N --> O
+    
+    O --> P{재순위화/압축?}
+    P -->|Yes| Q[Cross-Encoder Reranking]
+    P -->|No| R[Raw Results]
+    
+    Q --> S[Contextual Compression]
+    R --> T[Search Results]
+    S --> T
             </div>
+        </div>
+        
+        <div class="description">
+            <h3>🔍 실제 검색 전략 선택 로직</h3>
+            <p><strong>1단계:</strong> LLM이 Few-shot 예시를 통해 쿼리 분석 (general/specific/troubleshooting + hybrid_semantic/hybrid_balanced/hybrid_keyword)</p>
+            <p><strong>2단계:</strong> 키워드 규칙이 LLM 결과를 <strong>오버라이드</strong> (우선순위: 키워드 규칙 > LLM 분석)</p>
+            <p><strong>3단계:</strong> 선택된 방법으로 검색 실행</p>
+        </div>
+        
+        <div class="feature-list">
+            <h3>📊 검색 방법별 특징</h3>
+            <ul>
+                <li><strong>expanded_query</strong>: 전문 용어 확장 + 하이브리드 검색 (교체/문제/고장/이상 키워드)</li>
+                <li><strong>multi_query</strong>: 3개 관점 쿼리 생성 + 벡터 검색 (복잡한 질문, 20자 이상 + '?')</li>
+                <li><strong>hybrid_semantic</strong>: 의미론적 우선 (7:3) - LLM 분석 결과</li>
+                <li><strong>hybrid_balanced</strong>: 균형 검색 (5:5) - LLM 분석 결과</li>
+                <li><strong>hybrid_keyword</strong>: 키워드 우선 (3:7) - LLM 분석 결과</li>
+            </ul>
+        </div>
+        
+        <div class="description">
+            <h3>📋 실제 검색기 선택 예시 (수정된 정확한 표)</h3>
+            <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+                <thead>
+                    <tr style="background-color: #f8f9fa;">
+                        <th style="border: 1px solid #ddd; padding: 12px; text-align: left;">질문 유형</th>
+                        <th style="border: 1px solid #ddd; padding: 12px; text-align: left;">LLM 분석 결과</th>
+                        <th style="border: 1px solid #ddd; padding: 12px; text-align: left;">키워드 규칙</th>
+                        <th style="border: 1px solid #ddd; padding: 12px; text-align: left;"><strong>최종 선택</strong></th>
+                        <th style="border: 1px solid #ddd; padding: 12px; text-align: left;">이유</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="border: 1px solid #ddd; padding: 12px;">"오일 교체 주기는?"</td>
+                        <td style="border: 1px solid #ddd; padding: 12px;">general → hybrid_semantic</td>
+                        <td style="border: 1px solid #ddd; padding: 12px;"><strong>교체 키워드 감지</strong></td>
+                        <td style="border: 1px solid #ddd; padding: 12px;"><strong>expanded_query</strong></td>
+                        <td style="border: 1px solid #ddd; padding: 12px;">키워드 규칙이 우선</td>
+                    </tr>
+                    <tr style="background-color: #f8f9fa;">
+                        <td style="border: 1px solid #ddd; padding: 12px;">"브레이크 경고등 깜빡임"</td>
+                        <td style="border: 1px solid #ddd; padding: 12px;">troubleshooting → hybrid_keyword</td>
+                        <td style="border: 1px solid #ddd; padding: 12px;">없음</td>
+                        <td style="border: 1px solid #ddd; padding: 12px;"><strong>hybrid_keyword</strong></td>
+                        <td style="border: 1px solid #ddd; padding: 12px;">LLM 결과 사용</td>
+                    </tr>
+                    <tr>
+                        <td style="border: 1px solid #ddd; padding: 12px;">"XC60 타이어 공기압"</td>
+                        <td style="border: 1px solid #ddd; padding: 12px;">specific → hybrid_balanced</td>
+                        <td style="border: 1px solid #ddd; padding: 12px;">없음</td>
+                        <td style="border: 1px solid #ddd; padding: 12px;"><strong>hybrid_balanced</strong></td>
+                        <td style="border: 1px solid #ddd; padding: 12px;">LLM 결과 사용</td>
+                    </tr>
+                    <tr style="background-color: #f8f9fa;">
+                        <td style="border: 1px solid #ddd; padding: 12px;">"엔진 소음 이상"</td>
+                        <td style="border: 1px solid #ddd; padding: 12px;">general → hybrid_semantic</td>
+                        <td style="border: 1px solid #ddd; padding: 12px;"><strong>이상 키워드 감지</strong></td>
+                        <td style="border: 1px solid #ddd; padding: 12px;"><strong>expanded_query</strong></td>
+                        <td style="border: 1px solid #ddd; padding: 12px;">키워드 규칙이 우선</td>
+                    </tr>
+                    <tr>
+                        <td style="border: 1px solid #ddd; padding: 12px;">"복잡한 긴 질문?"</td>
+                        <td style="border: 1px solid #ddd; padding: 12px;">general → hybrid_semantic</td>
+                        <td style="border: 1px solid #ddd; padding: 12px;"><strong>복잡한 질문 감지</strong></td>
+                        <td style="border: 1px solid #ddd; padding: 12px;"><strong>multi_query</strong></td>
+                        <td style="border: 1px solid #ddd; padding: 12px;">키워드 규칙이 우선</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
 
         <h2>4. 콜백 시스템</h2>
