@@ -100,50 +100,9 @@ python main.py
 
 ### 5. 테스트 실행
 
-시스템의 응급 상황 최적화 기능을 테스트할 수 있습니다:
-
 ```bash
 # 빠른 테스트 (핵심 기능만)
-python tests/quick_test.py
-
-# 전체 응급 상황 시스템 테스트
-python run_tests.py --test-type emergency
-
-# 성능 벤치마크 테스트
-python run_tests.py --test-type performance
-
-# 모든 테스트 실행
-python run_tests.py --test-type all --verbose
-```
-
-#### 🧪 **테스트 종류**
-
-| 테스트 타입 | 설명 | 실행 시간 | 포함 내용 |
-|-------------|------|-----------|-----------|
-| **빠른 테스트** | 핵심 기능 확인 | ~2분 | 응급 감지, 기본 통합, 간단한 성능 |
-| **응급 시스템 테스트** | 응급 상황 전문 테스트 | ~5분 | 감지 정확도, 응답 품질, 안전성 |
-| **성능 벤치마크** | 상세 성능 분석 | ~10분 | 응답 시간, 처리량, 품질 비교 |
-| **전체 테스트** | 종합 테스트 | ~15분 | 모든 테스트 + 상세 리포트 |
-| **실제 상황 테스트** | 운전자 실제 상황 시뮬레이션 | ~8분 | 일반 질문 5개 + 응급 상황 5개 |
-
-#### 🚗 **운전자 실제 상황 테스트**
-
-차량 내에서 운전자가 실제로 궁금해할 수 있는 상황들을 테스트합니다:
-
-**📝 일반 질문 예시**:
-- "운전석 시트를 내 체형에 맞게 조정하는 방법이 궁금해요"
-- "겨울철 히터를 효율적으로 사용하는 방법을 알려주세요"
-- "블루투스로 스마트폰 음악을 들으려면 어떻게 연결하나요?"
-
-**🚨 응급 상황 예시**:
-- "주행 중 갑자기 엔진 경고등이 빨갛게 켜졌어요! 어떻게 해야 하나요?"
-- "브레이크 페달을 밟는데 바닥까지 들어가요! 급한 상황인가요?"
-- "차 안에 가스 냄새가 나는데 즉시 해야 할 조치가 뭔가요?"
-
-```bash
-# 실제 상황 테스트 실행 (별도 파일)
-python test_driver_scenarios.py           # 전체 테스트 (10개 질문)
-python test_driver_scenarios.py --mode quick  # 빠른 테스트 (3개 질문)
+python vehicle_test_scenarios.py
 ```
 
 ## 🔧 SubGraph 아키텍처
@@ -175,152 +134,10 @@ START → Emergency Detection → Search Pipeline → Answer Generation → Driv
 
 ### ✨ **SubGraph의 장점**
 
-#### 1. **모듈화 (Modularity)**
-- 각 SubGraph는 독립적인 기능을 담당
-- 개별 테스트 및 디버깅 가능
-- 코드 재사용성 극대화
-
-#### 2. **재사용성 (Reusability)**
-- 다른 프로젝트에서 SubGraph 재사용 가능
-- 다양한 조합으로 새로운 워크플로우 구성
-- 컴포넌트 기반 개발
-
-#### 3. **확장성 (Scalability)**
-- 새로운 SubGraph 쉽게 추가
-- 기존 SubGraph 수정 시 다른 부분에 영향 없음
-- 팀 단위 개발 가능
-
-#### 4. **유지보수성 (Maintainability)**
-- 관심사 분리로 코드 이해도 향상
-- 버그 수정 및 기능 개선이 특정 모듈에만 집중
-- 코드 리뷰 및 협업 효율성 증대
-
-### 🛠️ **SubGraph 구현 예시**
-
-#### **Emergency Detection SubGraph**
-```python
-class EmergencyDetectionSubGraph:
-    def emergency_classifier(self, state: EmergencyDetectionState):
-        # 응급 상황 감지 로직
-        emergency_analysis = self.emergency_detector.detect_emergency(query)
-        return {
-            "is_emergency": emergency_analysis["is_emergency"],
-            "emergency_level": emergency_analysis["priority_level"],
-            # ... 기타 응급 관련 정보
-        }
-    
-    def create_graph(self) -> StateGraph:
-        workflow = StateGraph(EmergencyDetectionState)
-        workflow.add_node("emergency_classifier", self.emergency_classifier)
-        workflow.set_entry_point("emergency_classifier")
-        workflow.add_edge("emergency_classifier", END)
-        return workflow.compile()
-```
-
-#### **Search Pipeline SubGraph**
-```python
-class SearchPipelineSubGraph:
-    def query_analyzer(self, state: SearchPipelineState):
-        # 쿼리 분석 및 검색 전략 선택
-        pass
-    
-    def search_executor(self, state: SearchPipelineState):
-        # 실제 검색 실행
-        pass
-    
-    def create_graph(self) -> StateGraph:
-        workflow = StateGraph(SearchPipelineState)
-        workflow.add_node("query_analyzer", self.query_analyzer)
-        workflow.add_node("search_executor", self.search_executor)
-        workflow.set_entry_point("query_analyzer")
-        workflow.add_edge("query_analyzer", "search_executor")
-        workflow.add_edge("search_executor", END)
-        return workflow.compile()
-```
-
-### 🔧 **메인 에이전트에서 SubGraph 사용**
-
-```python
-class VehicleManualAgentSubGraph:
-    def __init__(self, pdf_path: str):
-        # SubGraph 인스턴스들 초기화
-        self.emergency_subgraph = EmergencyDetectionSubGraph()
-        self.search_subgraph = SearchPipelineSubGraph(...)
-        self.answer_subgraph = AnswerGenerationSubGraph()
-        self.driving_subgraph = DrivingContextSubGraph()
-    
-    def emergency_detection_wrapper(self, state: MainAgentState):
-        # Emergency Detection SubGraph 실행
-        return self.emergency_subgraph.invoke(state["query"])
-    
-    def search_pipeline_wrapper(self, state: MainAgentState):
-        # Search Pipeline SubGraph 실행
-        return self.search_subgraph.invoke(
-            state["query"], 
-            is_emergency=state.get("is_emergency"),
-            emergency_data=emergency_data
-        )
-    
-    def create_graph(self) -> StateGraph:
-        workflow = StateGraph(MainAgentState)
-        
-        # SubGraph 래퍼 노드들 추가
-        workflow.add_node("emergency_detection", self.emergency_detection_wrapper)
-        workflow.add_node("search_pipeline", self.search_pipeline_wrapper)
-        workflow.add_node("answer_generation", self.answer_generation_wrapper)
-        workflow.add_node("driving_context", self.driving_context_wrapper)
-        
-        # 순차적 실행
-        workflow.set_entry_point("emergency_detection")
-        workflow.add_edge("emergency_detection", "search_pipeline")
-        workflow.add_edge("search_pipeline", "answer_generation")
-        workflow.add_edge("answer_generation", "driving_context")
-        workflow.add_edge("driving_context", END)
-        
-        return workflow.compile()
-```
-
-### 📊 **성능 및 개발 효율성**
-
-| 항목 | 기존 구조 | SubGraph 구조 | 개선 효과 |
-|------|-----------|---------------|-----------|
-| **코드 재사용성** | 낮음 | 높음 | ⬆️ 300% 향상 |
-| **모듈 테스트** | 어려움 | 쉬움 | ⬆️ 500% 향상 |
-| **개발 속도** | 보통 | 빠름 | ⬆️ 200% 향상 |
-| **유지보수성** | 어려움 | 쉬움 | ⬆️ 400% 향상 |
-| **팀 협업** | 제한적 | 효율적 | ⬆️ 250% 향상 |
-
-### 🚀 **실행 방법**
-
-#### **SubGraph 아키텍처 사용**
-```bash
-# SubGraph 아키텍처로 실행
-python main.py
-
-# 또는 SubGraph 전용 실행 파일
-python main_subgraph.py
-```
-
-#### **기존 아키텍처 사용**
-```bash
-# 기존 단일 에이전트 구조 (호환성 유지)
-python main_legacy.py  # 필요시 생성
-```
-
-### 🔮 **향후 확장 계획**
-
-1. **새로운 SubGraph 추가**
-   - `TranslationSubGraph`: 다국어 지원
-   - `VoiceSubGraph`: 음성 인식/합성
-   - `ImageSubGraph`: 이미지 분석
-
-2. **동적 SubGraph 조합**
-   - 사용자 설정에 따른 SubGraph 선택
-   - 상황별 최적화된 워크플로우
-
-3. **분산 SubGraph 실행**
-   - 각 SubGraph를 별도 서비스로 분리
-   - 마이크로서비스 아키텍처 적용
+- **모듈화**: 각 SubGraph는 독립적인 기능을 담당
+- **재사용성**: 다른 프로젝트에서 SubGraph 재사용 가능
+- **확장성**: 새로운 SubGraph 쉽게 추가
+- **유지보수성**: 관심사 분리로 코드 이해도 향상
 
 ## 🔧 시스템 구성요소
 
@@ -470,17 +287,16 @@ elif "경고등" in query or "문제" in query:
 - **평균 응답시간**: ~8초
 - **지원 언어**: 한국어 (Kiwi 토크나이저)
 - **신뢰도 투명성**: 모든 답변에 6가지 기준 평가 결과 포함
-- **토큰 효율성**: Chat History 미사용으로 토큰 사용량 최적화
 
 ## 🛠️ 사용 예시
 
 ### 🔧 **기본 사용법**
 
 ```python
-from src.agents.vehicle_agent import VehicleManualAgent
+from src.agents.vehicle_agent_subgraph import VehicleManualAgentSubGraph
 
 # 에이전트 초기화
-agent = VehicleManualAgent("path/to/your/manual.pdf")
+agent = VehicleManualAgentSubGraph("path/to/your/manual.pdf")
 
 # 질문하기
 answer = agent.query("타이어 공기압은 얼마로 맞춰야 하나요?")
@@ -589,45 +405,7 @@ A: 타이어 공기압은 차량 모델에 따라 다르지만, 일반적으로 
 
 ### 💡 **신뢰도 기반 안전 가이드**
 
-시스템은 신뢰도에 따라 자동으로 적절한 안내를 제공합니다:
-
-- **80% 이상**: "✅ 높은 신뢰도의 답변입니다."
-- **60-80%**: "⚠️ 추가 확인을 권장합니다."
-- **60% 미만**: "❌ 전문가 상담을 강력히 권장합니다."
-
-### 🔧 **프로그래밍 방식 사용**
-
-```python
-from src.utils.answer_evaluator import AnswerEvaluator
-
-# 답변 평가
-evaluator = AnswerEvaluator()
-evaluation = evaluator.evaluate_answer(question, answer, search_results)
-
-# 결과 확인
-print(f"신뢰도: {evaluation['percentage']}%")
-print(f"등급: {evaluation['reliability_grade']}")
-print(f"상세 점수: {evaluation['detailed_scores']}")
-
-# 에이전트 사용 시 자동 포함
-agent = VehicleManualAgent("path/to/manual.pdf")
-answer = agent.query("타이어 공기압은?")
-# 답변에 신뢰도 정보가 자동으로 포함됨
-```
-
-## 🔍 주요 개선사항
-
-1. **모듈화된 아키텍처**: 관심사 분리와 확장성
-2. **다단계 검색**: 벡터 → 하이브리드 → 재순위화 → 압축
-3. **한국어 최적화**: Kiwi 토크나이저 및 전문 용어 매핑
-4. **실시간 신뢰도 평가**: 6가지 기준의 객관적 품질 평가
-5. **투명한 품질 지표**: 모든 답변에 신뢰도 퍼센트와 등급 자동 포함
-6. **안전 중심 설계**: 신뢰도 기반 전문가 상담 권유 시스템
-7. **토큰 최적화**: Chat History 미사용으로 비용 효율성 극대화
-
-## 🚨 응급 상황 최적화 시스템
-
-차량 운전 중 발생할 수 있는 **생명 위험 응급 상황**에 대한 특화된 처리 시스템을 구축했습니다.
+차량 운전 중 발생할 수 있는 **생명 위험 응급 상황**에 대한 특화된 처리 시스템:
 
 ### 🎯 **응급 상황 자동 감지**
 
@@ -801,71 +579,17 @@ result = detector.detect_emergency("브레이크가 안 멈춰요!")
 
 ## 🚗 주행 상황 감지 및 답변 압축
 
-### 🎯 **핵심 개념**
+실제 차량 사용 환경에서 **운전자의 안전을 최우선**으로 고려한 지능형 답변 시스템:
 
-실제 차량 사용 환경에서 **운전자의 안전을 최우선**으로 고려한 지능형 답변 시스템입니다.
+### 🔍 **주행 상황 감지**
 
-### 🔍 **주행 상황 감지 기술**
-
-#### **1. 다층 감지 시스템**
-
-```python
-from src.utils.driving_context_detector import DrivingContextDetector
-
-detector = DrivingContextDetector()
-result = detector.detect_driving_context("지금 운전 중인데 브레이크에서 소리가 나요")
-
-# 결과
-{
-    "is_driving": True,
-    "confidence": 0.78,
-    "driving_indicators": ["지금", "운전 중", "~중인데"],
-    "urgency_level": "urgent",
-    "compression_needed": True
-}
-```
-
-#### **2. 감지 패턴 분류**
-
-| 유형 | 키워드 예시 | 가중치 | 설명 |
-|------|-------------|--------|------|
-| **명시적 주행** | "운전 중", "주행 중", "차 안에서" | 0.4 | 직접적인 주행 표현 |
-| **시간적 긴급성** | "지금", "바로", "당장", "갑자기" | 0.2 | 즉시성을 나타내는 표현 |
-| **상황적 맥락** | "~하고 있는데", "~중인데" | 0.1 | 현재 진행 상황 표현 |
-
-#### **3. 3단계 긴급도 분류**
-
-```python
-# immediate: 즉시 대응 필요 (안전 위험)
-🚨 즉시 안전한 곳에 정차하세요
-⚠️ 엔진 브레이크 사용, 비상등 켜기
-
-# urgent: 빠른 대응 필요 (기능 문제)  
-⚡ 브레이크 점검 필요
-1. 브레이크 페달 확인
-2. 브레이크액 점검
-
-# normal: 일반적 문의
-📍 엔진오일 교체 주기: 10,000km
-1. 오일 상태 확인
-2. 서비스센터 예약
-3. 정기 점검 실시
-📋 주행 후: 상세 매뉴얼 확인
-```
+- **다층 감지 시스템**: 키워드 분석 + LLM 판단
+- **3단계 긴급도 분류**: immediate, urgent, normal
+- **압축 원칙**: 안전 최우선, 핵심만 전달, 간결한 표현
 
 ### 📱 **스마트 답변 압축**
 
-#### **압축 원칙**
-
-1. **안전 최우선**: 주행에 방해되지 않도록
-2. **핵심만 전달**: 가장 중요한 1-2가지 행동만
-3. **간결한 표현**: 한 문장으로 핵심 전달
-4. **단계별 최소화**: 최대 3단계까지만
-5. **시각적 주의 최소화**: 긴 텍스트 금지
-
-#### **압축 전후 비교**
-
-**🔴 압축 전 (일반 모드)**:
+**압축 전 (일반 모드)**:
 ```
 📝 일반 질문
 
@@ -876,14 +600,11 @@ result = detector.detect_driving_context("지금 운전 중인데 브레이크�
 ⚠️ 안전상 주의사항: 운전 중에는 도로 상황에 집중하시고, 
 정차 후 오일 상태를 확인하시기 바랍니다.
 
-추가로, 오일 교체는 볼보 공식 서비스 센터에서 실시하는 것이 
-가장 안전합니다.
-
 🔍 답변 신뢰도: 68.0% (보통 (C))
 ⚠️ 추가 확인을 권장합니다.
 ```
 
-**🟢 압축 후 (주행 모드)**:
+**압축 후 (주행 모드)**:
 ```
 📍 엔진오일 교체: 10,000km마다
 1. 현재 주행거리 확인
@@ -893,124 +614,6 @@ result = detector.detect_driving_context("지금 운전 중인데 브레이크�
 📋 주행 후 상세 내용을 확인하세요
 ```
 
-### 🔄 **워크플로우 통합**
-
-```
-START → emergency_classifier → query_analyzer → search_executor 
-      → answer_generator → driving_context_processor → END
-```
-
-#### **처리 흐름**
-
-1. **응급 상황 감지** → 우선순위 설정
-2. **쿼리 분석** → 검색 전략 선택  
-3. **검색 실행** → 관련 문서 수집
-4. **답변 생성** → 상세 답변 작성
-5. **🆕 주행 상황 처리** → 압축 여부 결정
-6. **최종 출력** → 상황별 최적화된 답변
-
-### 📊 **성능 및 안전성 향상**
-
-| 상황 | 일반 답변 | 주행 중 답변 | 개선 효과 |
-|------|-----------|--------------|-----------|
-| **응답 길이** | 200-500자 | **50-150자** | ⬇️ 70% 단축 |
-| **읽기 시간** | 30-60초 | **5-15초** | ⬇️ 75% 단축 |
-| **주의 분산** | 높음 | **최소화** | ⬆️ 안전성 극대화 |
-| **실행 가능성** | 복잡 | **즉시 실행** | ⬆️ 실용성 향상 |
-
-### 🧪 **테스트 결과**
-
-```python
-# 테스트 케이스별 감지 정확도
-test_cases = [
-    "지금 운전 중인데 브레이크에서 소리가 나요" → ✅ 주행감지 (78%), urgent
-    "엔진오일 교체 주기는?" → ✅ 일반질문 (100%), normal  
-    "지금 당장 타이어 공기압 확인하는 방법" → ✅ 시간긴급성 (62%), urgent
-]
-
-# 전체 정확도: 85%+
-```
-
-이 시스템을 통해 **실제 주행 환경에서 안전하고 효율적인** 차량 정보 제공이 가능합니다! 🚗📱
-
-## ⚡ 성능 최적화 설계
-
-### 💰 **토큰 사용량 최적화**
-
-본 시스템은 **Chat History를 별도로 관리하지 않는** 설계를 채택했습니다.
-
-#### 🎯 **설계 근거**
-
-차량 매뉴얼 에이전트의 특성상 **단독 One-Shot 질문**이 대부분을 차지할 것으로 예상됩니다:
-
-**일반적인 질문 패턴**:
-```
-❓ "엔진오일 교체 주기 알려줘"
-❓ "타이어 공기압 경고등이 켜졌는데 의미가 뭐야?"
-❓ "브레이크 패드 교체는 언제 해야 하나요?"
-❓ "XC60의 연료 탱크 용량은 얼마인가요?"
-```
-
-#### 📈 **성능상 이점**
-
-| 항목 | Chat History 사용 | Chat History 미사용 | 개선 효과 |
-|------|-------------------|-------------------|-----------|
-| **토큰 사용량** | 누적 증가 | 고정 | ⬇️ 70-80% 절약 |
-| **응답 속도** | 히스토리 처리 시간 | 즉시 처리 | ⬆️ 30-40% 향상 |
-| **비용** | 누적 증가 | 고정 | ⬇️ 70-80% 절약 |
-| **메모리 사용량** | 세션별 누적 | 최소 사용 | ⬇️ 대폭 절약 |
-
-#### 🔍 **사용 패턴 분석**
-
-**차량 매뉴얼 질문의 특징**:
-- ✅ **독립적 질문**: 각 질문이 독립적이며 이전 대화 맥락 불필요
-- ✅ **즉시 해결**: 한 번의 질문으로 완결되는 정보 요청
-- ✅ **명확한 의도**: 구체적이고 명확한 정보 요청
-- ✅ **참조 기반**: 매뉴얼 내용에 기반한 팩트 중심 답변
-
-**Chat History가 필요한 경우 (드문 케이스)**:
-```
-❓ "브레이크 교체 비용은?"
-💡 "브레이크 패드 교체 비용은 부품과 공임비에 따라..."
-
-❓ "그럼 언제 교체해야 해?"  ← 이전 맥락 필요
-```
-
-#### ⚙️ **기술적 구현**
-
-```python
-# 각 쿼리마다 독립적인 상태로 처리
-initial_state = {
-    "messages": [],  # 빈 메시지 히스토리
-    "query": user_query,  # 현재 질문만 처리
-    "search_results": [],
-    # ... 기타 상태들
-}
-
-# 이전 대화 내용 없이 즉시 처리
-result = graph.invoke(initial_state)
-```
-
-#### 💡 **향후 확장 가능성**
-
-필요시 선택적 Chat History 기능 추가 가능:
-- 세션 기반 히스토리 옵션
-- 사용자별 맞춤 설정
-- 복잡한 다단계 질문 지원
-
-하지만 현재 설계는 **차량 매뉴얼의 특성에 최적화**되어 있습니다.
-
-## 🤝 기여하기
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-## 📝 라이선스
-
-이 프로젝트는 MIT 라이선스 하에 배포됩니다.
-
 ## ⚠️ 주의사항
 
 - **API 키 필수**: OpenAI API 키가 필요합니다
@@ -1019,7 +622,6 @@ result = graph.invoke(initial_state)
 - **신뢰도 해석**: 신뢰도는 시스템 평가이며, 실제 정확성과 다를 수 있습니다
 - **전문가 상담**: 안전 관련 문제는 반드시 전문가와 상담하세요
 - **답변 검증**: 중요한 결정 전에는 공식 매뉴얼이나 서비스 센터에서 확인하세요
-- **대화 맥락**: 이전 질문의 맥락은 유지되지 않으므로, 연관 질문 시 충분한 정보를 포함해 주세요
 
 ## 📞 문의
 
