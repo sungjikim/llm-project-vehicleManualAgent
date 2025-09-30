@@ -71,9 +71,11 @@ def main():
         print("🚗 차량에 관한 모든 질문을 자유롭게 해주세요!")
         print("📝 일반 질문부터 🚨 응급 상황까지 즉시 대응합니다.")
         print("🔧 SubGraph 아키텍처로 더욱 안정적이고 확장 가능합니다.")
+        print("🎤 음성 인식 기능 지원 (DummyASR/STT)")
         print("")
         print("💡 사용법:")
         print("   • 질문 입력 후 Enter")
+        print("   • 'voice' - 음성 인식 모드 (더미)")
         print("   • 'stats' - 성능 통계 확인")
         print("   • 'quit' 또는 'exit' - 종료")
         print("=" * 60)
@@ -92,6 +94,18 @@ def main():
                     print(f"\n💰 현재 세션 사용량:")
                     print(f"   토큰: {usage['tokens_used']:,}개 / {usage['token_limit']:,}개 ({usage['token_usage_percentage']:.1f}%)")
                     print(f"   비용: ${usage['cost_incurred']:.4f} / ${usage['cost_limit']:.2f} ({usage['cost_usage_percentage']:.1f}%)")
+                    continue
+                
+                if user_input.lower() == 'voice':
+                    print("\n🎤 음성 인식 모드 (더미)")
+                    print("📝 현재는 더미 음성 인식이 실행됩니다.")
+                    print("🔧 실제 구현 시 마이크 입력을 받아 음성을 텍스트로 변환합니다.")
+                    
+                    # 더미 음성 인식 실행
+                    answer = agent.query(audio_data=None, audio_file_path=None, callbacks=callbacks)
+                    
+                    print(f"\n💡 답변:\n{answer}")
+                    print("-" * 50)
                     continue
                 
                 if not user_input:

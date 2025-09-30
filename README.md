@@ -15,6 +15,7 @@ LangChain과 LangGraph를 활용한 모듈화된 차량 매뉴얼 RAG(Retrieval-
 - 🔥 **즉시 인식 헤더**: 답변 첫 줄에 응급 등급 명시 (CRITICAL/HIGH/MEDIUM/LOW)
 - 🚗 **주행 상황 감지**: 발화 패턴 분석을 통한 운전 중 상황 자동 감지
 - 📱 **스마트 답변 압축**: 주행 중 안전을 위한 핵심 정보만 제공
+- 🎤 **음성 인식 지원**: ASR/STT 기반 음성 입력 처리 (확장 가능)
 - 🔧 **SubGraph 아키텍처**: 모듈화된 재사용 가능한 컴포넌트 구조
 
 ## 🏗️ 프로젝트 구조
@@ -29,7 +30,8 @@ project/
 │   │       ├── emergency_detection_subgraph.py    # 응급 상황 감지 SubGraph
 │   │       ├── search_pipeline_subgraph.py        # 검색 파이프라인 SubGraph
 │   │       ├── answer_generation_subgraph.py      # 답변 생성 SubGraph
-│   │       └── driving_context_subgraph.py        # 주행 상황 처리 SubGraph
+│   │       ├── driving_context_subgraph.py        # 주행 상황 처리 SubGraph
+│   │       └── speech_recognition_subgraph.py     # 음성 인식 SubGraph
 │   ├── config/                    # 설정 및 상수
 │   │   └── settings.py            # 시스템 설정값
 │   ├── models/                    # 데이터 모델
@@ -129,15 +131,8 @@ SubGraph 아키텍처는 복잡한 LangGraph 워크플로우를 **재사용 가�
 ### 🔄 **워크플로우 흐름**
 
 ```
-START → Emergency Detection → Search Pipeline → Answer Generation → Driving Context → END
+START → Speech Recognition → Emergency Detection → Search Pipeline → Answer Generation → Driving Context → END
 ```
-
-### ✨ **SubGraph의 장점**
-
-- **모듈화**: 각 SubGraph는 독립적인 기능을 담당
-- **재사용성**: 다른 프로젝트에서 SubGraph 재사용 가능
-- **확장성**: 새로운 SubGraph 쉽게 추가
-- **유지보수성**: 관심사 분리로 코드 이해도 향상
 
 ## 🔧 시스템 구성요소
 
@@ -337,6 +332,27 @@ answer2 = agent.query("지금 당장 브레이크가 이상해요!")
 # 3. 일반 상황 (상세 답변 유지)
 answer3 = agent.query("엔진오일 교체 방법을 자세히 알려주세요")
 # → 일반 상황 → 기존 상세 답변 제공
+```
+
+### 🎤 **음성 인식 사용 예시**
+
+```python
+# 1. 텍스트 입력 (기존 방식)
+answer1 = agent.query(user_query="엔진 오일 교체 주기를 알려주세요")
+# → 텍스트 쿼리 → 음성 인식 건너뛰기 → 일반 처리
+
+# 2. 음성 데이터 입력 (바이트)
+audio_bytes = b"..."  # 실제 음성 데이터
+answer2 = agent.query(audio_data=audio_bytes)
+# → 음성 인식 → 텍스트 변환 → 일반 처리
+
+# 3. 음성 파일 입력 (파일 경로)
+answer3 = agent.query(audio_file_path="voice_input.wav")
+# → 음성 파일 처리 → 텍스트 변환 → 일반 처리
+
+# 4. 더미 음성 인식 (테스트용)
+answer4 = agent.query()  # audio_data=None, audio_file_path=None
+# → 더미 음성 생성 → 텍스트 변환 → 일반 처리
 ```
 
 #### **🎯 주행 상황 감지 결과 예시**
@@ -566,15 +582,6 @@ result = detector.detect_emergency("브레이크가 안 멈춰요!")
 }
 ```
 
-### 📈 **성능 향상 결과**
-
-| 메트릭 | 일반 질문 | 응급 질문 | 개선 효과 |
-|--------|-----------|-----------|-----------|
-| **응답 시간** | 10-15초 | **5-8초** | ⬆️ 50% 빨라짐 |
-| **안전성** | 일반 답변 | **즉시 조치 우선** | ⬆️ 생명 보호 |
-| **정확성** | 신뢰도 평가 | **안전 중심 답변** | ⬆️ 실용성 극대화 |
-| **사용성** | 상세 분석 | **핵심 행동 지침** | ⬆️ 즉시 실행 가능 |
-
 이 시스템을 통해 **차량 응급 상황에서 생명을 구할 수 있는** 실시간 지원을 제공합니다! 🚗💨
 
 ## 🚗 주행 상황 감지 및 답변 압축
@@ -613,6 +620,87 @@ result = detector.detect_emergency("브레이크가 안 멈춰요!")
 
 📋 주행 후 상세 내용을 확인하세요
 ```
+
+## 🎤 음성 인식 시스템
+
+### 🎯 **핵심 개념**
+
+실제 차량 환경에서 **음성으로 질문**할 수 있는 확장 가능한 음성 인식 시스템입니다.
+
+### 🔧 **음성 인식 SubGraph 구조**
+
+```
+Speech Recognition SubGraph
+├── audio_processor (DummyASR/STT)
+└── text_validator (텍스트 검증)
+```
+
+### 🎵 **지원하는 입력 방식**
+
+| 입력 방식 | 클래스 | 설명 | 확장 가능성 |
+|-----------|--------|------|-------------|
+| **바이트 데이터** | `DummyASR` | 실시간 음성 스트림 | Whisper, Google Speech-to-Text |
+| **파일 경로** | `DummySTT` | 음성 파일 처리 | Azure Speech, AWS Transcribe |
+| **더미 모드** | `DummyASR/STT` | 테스트 및 개발용 | 실제 음성 인식으로 교체 |
+
+### 🔄 **음성 인식 워크플로우**
+
+```
+음성 입력 → 음성 인식 SubGraph → 텍스트 변환 → 기존 RAG 워크플로우
+    ↓
+텍스트 입력 → 음성 인식 건너뛰기 → 기존 RAG 워크플로우
+```
+
+### 💡 **확장 가이드**
+
+#### **실제 ASR 구현 예시**
+```python
+class RealASR:
+    def __init__(self):
+        import whisper
+        self.model = whisper.load_model("base")
+    
+    def transcribe(self, audio_data: bytes) -> str:
+        # 임시 파일로 저장
+        with tempfile.NamedTemporaryFile(suffix='.wav') as tmp:
+            tmp.write(audio_data)
+            result = self.model.transcribe(tmp.name, language='ko')
+            return result["text"]
+```
+
+#### **실제 STT 구현 예시**
+```python
+class RealSTT:
+    def __init__(self):
+        import speech_recognition as sr
+        self.recognizer = sr.Recognizer()
+    
+    def process_audio(self, audio_file_path: str) -> str:
+        with sr.AudioFile(audio_file_path) as source:
+            audio = self.recognizer.record(source)
+            text = self.recognizer.recognize_google(audio, language='ko-KR')
+            return text
+```
+
+### 🧪 **테스트 방법**
+
+```bash
+# 음성 인식 기능 테스트
+python test_speech_recognition.py
+
+# 메인 시스템에서 음성 인식 모드
+python main.py
+# 'voice' 명령어 입력
+```
+
+### 📊 **성능 특성**
+
+- **텍스트 우선**: 텍스트 입력 시 음성 인식 자동 건너뛰기
+- **오류 처리**: 음성 인식 실패 시 적절한 오류 메시지
+- **확장성**: 실제 음성 인식 엔진으로 쉽게 교체 가능
+- **테스트 지원**: 더미 모드로 개발 및 테스트 용이
+
+이 시스템을 통해 **음성과 텍스트 모두를 지원하는** 통합 차량 어시스턴트가 가능합니다! 🎤🚗
 
 ## ⚠️ 주의사항
 

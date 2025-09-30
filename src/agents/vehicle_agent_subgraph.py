@@ -23,7 +23,8 @@ from .subgraphs import (
     EmergencyDetectionSubGraph,
     SearchPipelineSubGraph,
     AnswerGenerationSubGraph,
-    DrivingContextSubGraph
+    DrivingContextSubGraph,
+    SpeechRecognitionSubGraph
 )
 
 
@@ -55,6 +56,7 @@ class VehicleManualAgentSubGraph:
         self.search_subgraph = None
         self.answer_subgraph = None
         self.driving_subgraph = None
+        self.speech_subgraph = None
         
         # 시스템 초기화
         self._initialize_system()
@@ -167,6 +169,9 @@ class VehicleManualAgentSubGraph:
         
         # Driving Context SubGraph
         self.driving_subgraph = DrivingContextSubGraph()
+        
+        # Speech Recognition SubGraph
+        self.speech_subgraph = SpeechRecognitionSubGraph()
         
         print("✅ SubGraph 인스턴스 초기화 완료!")
     
@@ -328,18 +333,63 @@ class VehicleManualAgentSubGraph:
                 "final_answer": original_answer
             }
     
+    def speech_recognition_wrapper(self, state: MainAgentState) -> Dict[str, Any]:
+        """음성 인식 래퍼 노드"""
+        audio_data = state.get("audio_data")
+        audio_file_path = state.get("audio_file_path")
+        existing_query = state.get("query", "")
+        
+        # 이미 텍스트 쿼리가 있으면 음성 인식 건너뛰기
+        if existing_query and existing_query.strip():
+            print("📝 텍스트 쿼리 감지 - 음성 인식 건너뛰기")
+            return {
+                "recognized_text": "",
+                "speech_confidence": 0.0,
+                "speech_error": None,
+                "query": existing_query  # 기존 쿼리 유지
+            }
+        
+        print("🎤 음성 인식 SubGraph 실행 중...")
+        
+        try:
+            # Speech Recognition SubGraph 실행
+            speech_result = self.speech_subgraph.invoke(
+                audio_data=audio_data,
+                audio_file_path=audio_file_path
+            )
+            
+            print(f"✅ 음성 인식 완료: '{speech_result['final_text']}'")
+            
+            return {
+                "recognized_text": speech_result["final_text"],
+                "speech_confidence": speech_result["confidence"],
+                "speech_error": speech_result["error"],
+                "query": speech_result["final_text"]  # 인식된 텍스트를 쿼리로 설정
+            }
+            
+        except Exception as e:
+            print(f"❌ 음성 인식 오류: {str(e)}")
+            return {
+                "recognized_text": "",
+                "speech_confidence": 0.0,
+                "speech_error": f"음성 인식 중 오류가 발생했습니다: {str(e)}",
+                "query": ""
+            }
+    
     def create_graph(self) -> StateGraph:
         """LangGraph 워크플로우 생성 - SubGraph 아키텍처"""
         workflow = StateGraph(MainAgentState)
         
         # 노드 추가 (SubGraph 래퍼들)
+        workflow.add_node("speech_recognition", self.speech_recognition_wrapper)
         workflow.add_node("emergency_detection", self.emergency_detection_wrapper)
         workflow.add_node("search_pipeline", self.search_pipeline_wrapper)
         workflow.add_node("answer_generation", self.answer_generation_wrapper)
         workflow.add_node("driving_context", self.driving_context_wrapper)
         
-        # 엣지 추가 (순차적 실행)
-        workflow.set_entry_point("emergency_detection")
+        # 엣지 추가 (음성 인식 → 기존 워크플로우)
+        workflow.set_entry_point("speech_recognition")
+        workflow.add_edge("speech_recognition", "emergency_detection")
         workflow.add_edge("emergency_detection", "search_pipeline")
         workflow.add_edge("search_pipeline", "answer_generation")
         workflow.add_edge("answer_generation", "driving_context")
@@ -347,15 +397,16 @@ class VehicleManualAgentSubGraph:
         
         return workflow.compile()
     
-    def query(self, user_query: str, callbacks=None) -> str:
-        """사용자 쿼리 처리 - SubGraph 아키텍처"""
+    def query(self, user_query: str = None, audio_data: bytes = None, 
+              audio_file_path: str = None, callbacks=None) -> str:
+        """사용자 쿼리 처리 - SubGraph 아키텍처 (음성 인식 지원)"""
         try:
             graph = self.create_graph()
             
             # 초기 상태 설정
             initial_state = {
                 "messages": [],
-                "query": user_query,
+                "query": user_query or "",  # 텍스트 쿼리 (음성 인식 시 덮어씌워짐)
                 "search_results": [],
                 "context": "",
                 "final_answer": "",
@@ -377,6 +428,12 @@ class VehicleManualAgentSubGraph:
                 "driving_urgency": "normal",
                 "compression_needed": False,
                 "compressed_answer": "",
+                # 음성 인식 관련 초기값
+                "audio_data": audio_data,
+                "audio_file_path": audio_file_path,
+                "recognized_text": "",
+                "speech_confidence": 0.0,
+                "speech_error": None,
                 # 평가 관련
                 "evaluation_details": None
             }

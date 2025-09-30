@@ -56,6 +56,19 @@ class DrivingContextState(TypedDict):
     final_answer: str
 
 
+class SpeechRecognitionState(TypedDict):
+    """음성 인식 SubGraph 상태"""
+    audio_data: Optional[bytes]
+    audio_file_path: Optional[str]
+    recognized_text: str
+    confidence: float
+    error: Optional[str]
+    processing_method: str
+    is_valid: bool
+    validation_error: Optional[str]
+    final_text: str
+
+
 class MainAgentState(TypedDict):
     """메인 에이전트 상태 (SubGraph 통합용)"""
     messages: List[BaseMessage]
@@ -83,6 +96,13 @@ class MainAgentState(TypedDict):
     driving_urgency: str
     compression_needed: bool
     compressed_answer: str
+    
+    # 음성 인식 관련
+    audio_data: Optional[bytes]
+    audio_file_path: Optional[str]
+    recognized_text: str
+    speech_confidence: float
+    speech_error: Optional[str]
     
     # 평가 관련
     evaluation_details: Optional[Dict[str, Any]]
