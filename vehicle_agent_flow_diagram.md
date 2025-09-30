@@ -13,16 +13,15 @@ graph TD
     
     E --> F[LangGraph Workflow]
     
-    F --> G[Speech Recognition Node]
-    G --> H[Emergency Detection Node]
-    H --> I[Search Pipeline Node]
-    I --> J[Answer Generation Node]
-    J --> K[Driving Context Node]
-    K --> L[최종 답변]
+    F --> G[Emergency Detection Node]
+    G --> H[Search Pipeline Node]
+    H --> I[Answer Generation Node]
+    I --> J[Driving Context Node]
+    J --> K[최종 답변]
     
-    L --> M{인터페이스 타입}
-    M -->|터미널| N[콘솔 출력]
-    M -->|웹| O[웹 UI 표시]
+    K --> L{인터페이스 타입}
+    L -->|터미널| M[콘솔 출력]
+    L -->|웹| N[웹 UI 표시]
 ```
 
 ## SubGraph 상세 구조
@@ -30,55 +29,46 @@ graph TD
 ```mermaid
 graph TD
     subgraph "Main Agent (VehicleManualAgentSubGraph)"
-        A[사용자 쿼리] --> B[Speech Recognition Wrapper]
-        B --> C[Emergency Detection Wrapper]
-        C --> D[Search Pipeline Wrapper]
-        D --> E[Answer Generation Wrapper]
-        E --> F[Driving Context Wrapper]
-        F --> G[최종 답변]
-    end
-    
-    subgraph "Speech Recognition SubGraph"
-        B1[Audio Data Processing]
-        B2[DummyASR Transcription]
-        B3[Text Validation]
-        B1 --> B2 --> B3
+        A[사용자 쿼리] --> B[Emergency Detection Wrapper]
+        B --> C[Search Pipeline Wrapper]
+        C --> D[Answer Generation Wrapper]
+        D --> E[Driving Context Wrapper]
+        E --> F[최종 답변]
     end
     
     subgraph "Emergency Detection SubGraph"
-        C1[Emergency Classifier]
-        C2[Priority Level Analysis]
-        C3[Search Strategy Selection]
-        C1 --> C2 --> C3
+        B1[Emergency Classifier]
+        B2[Priority Level Analysis]
+        B3[Search Strategy Selection]
+        B1 --> B2 --> B3
     end
     
     subgraph "Search Pipeline SubGraph"
-        D1[Query Analyzer]
-        D2[Search Method Selector]
-        D3[Document Retrieval]
-        D4[Re-ranking/Compression]
-        D1 --> D2 --> D3 --> D4
+        C1[Query Analyzer]
+        C2[Search Method Selector]
+        C3[Document Retrieval]
+        C4[Re-ranking/Compression]
+        C1 --> C2 --> C3 --> C4
     end
     
     subgraph "Answer Generation SubGraph"
-        E1[Context Builder]
-        E2[Answer Generator]
-        E3[Answer Evaluator]
-        E1 --> E2 --> E3
+        D1[Context Builder]
+        D2[Answer Generator]
+        D3[Answer Evaluator]
+        D1 --> D2 --> D3
     end
     
     subgraph "Driving Context SubGraph"
-        F1[Driving Context Detector]
-        F2[Answer Compressor]
-        F3[Final Answer Formatter]
-        F1 --> F2 --> F3
+        E1[Driving Context Detector]
+        E2[Answer Compressor]
+        E3[Final Answer Formatter]
+        E1 --> E2 --> E3
     end
     
     B --> B1
     C --> C1
     D --> D1
     E --> E1
-    F --> F1
 ```
 
 ## 검색 파이프라인 상세 흐름
@@ -204,6 +194,5 @@ graph LR
 2. **응급 상황 감지**: 자동으로 응급 상황을 감지하고 우선순위 처리
 3. **하이브리드 검색**: 벡터 검색과 키워드 검색을 결합
 4. **주행 중 최적화**: 운전 중 상황을 감지하여 답변을 압축
-5. **음성 인식 지원**: 오디오 입력을 텍스트로 변환
-6. **실시간 모니터링**: 성능 및 사용량을 실시간으로 추적
-7. **다중 인터페이스**: 터미널과 웹 인터페이스 모두 지원
+5. **실시간 모니터링**: 성능 및 사용량을 실시간으로 추적
+6. **다중 인터페이스**: 터미널과 웹 인터페이스 모두 지원

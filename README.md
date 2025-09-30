@@ -2,6 +2,10 @@
 
 LangChain과 LangGraph를 활용한 모듈화된 차량 매뉴얼 RAG(Retrieval-Augmented Generation) 에이전트
 
+## 📊 시스템 아키텍처 다이어그램
+
+> **🔗 [시스템 흐름도 보기](vehicle_agent_flow_diagram.html)** - 브라우저에서 인터랙티브한 다이어그램을 확인하세요!
+
 ## ⚡ Quick Start
 
 ```bash
