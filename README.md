@@ -157,7 +157,7 @@ START → Emergency Detection → Search Pipeline → Answer Generation → Driv
 
 ### 📋 **상황별 검색기 자동 선택**
 
-시스템은 질문의 특성을 분석하여 **3가지 검색 전략**과 **8가지 검색 방법** 중 최적의 조합을 자동으로 선택합니다.
+시스템은 질문의 특성을 분석하여 **3가지 검색 전략**과 **7가지 검색 방법** 중 최적의 조합을 자동으로 선택합니다.
 
 #### 🎯 **검색 전략 (Search Strategy)**
 
