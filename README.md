@@ -62,7 +62,6 @@ python main.py --help
 project/
 ├── src/                           # 소스 코드
 │   ├── agents/                    # 메인 에이전트
-│   │   ├── vehicle_agent.py       # 차량 매뉴얼 RAG 에이전트 (기존)
 │   │   ├── vehicle_agent_subgraph.py # SubGraph 아키텍처 에이전트
 │   │   └── subgraphs/             # SubGraph 모듈들
 │   │       ├── emergency_detection_subgraph.py    # 응급 상황 감지 SubGraph
@@ -91,15 +90,13 @@ project/
 │       ├── driving_context_detector.py # 주행 상황 감지 및 답변 압축
 │       └── callback_handlers.py   # 성능 모니터링
 ├── tests/                         # 테스트 코드
+│   ├── integrated_test_scenarios.py # 통합 테스트 시나리오 (SubGraph 기반)
 │   ├── test_emergency_system.py   # 응급 상황 시스템 테스트
 │   ├── test_performance_benchmark.py # 성능 벤치마크 테스트
 │   └── quick_test.py              # 빠른 테스트
 ├── data/                          # 데이터 파일 (PDF 등)
 ├── main.py                        # 통합 메인 실행 파일 (터미널 + Gradio 지원)
-├── main_old.py                    # 이전 메인 파일 (백업)
 ├── run_tests.py                   # 테스트 실행 스크립트
-├── vehicle_test_scenarios.py      # 운전자 실제 상황 테스트
-├── extended_test_scenarios.py     # 확장 테스트 시나리오
 ├── test_scenarios.md              # 테스트 시나리오 문서
 └── requirements.txt               # 필요 패키지 목록
 ```
@@ -222,8 +219,18 @@ python main.py --help
 ### 5. 테스트 실행
 
 ```bash
-# 빠른 테스트 (핵심 기능만)
-python vehicle_test_scenarios.py
+# 통합 테스트 (SubGraph 기반)
+python tests/integrated_test_scenarios.py --mode quick
+
+# 전체 테스트
+python tests/integrated_test_scenarios.py --mode full
+
+# 응급 상황 집중 테스트
+python tests/integrated_test_scenarios.py --mode emergency
+
+# 기존 테스트들
+python run_tests.py
+python tests/quick_test.py
 ```
 
 ## 🔧 SubGraph 아키텍처

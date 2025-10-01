@@ -10,7 +10,7 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-from src.agents.vehicle_agent import VehicleManualAgent
+from src.agents.vehicle_agent_subgraph import VehicleManualAgentSubGraph
 from src.utils.emergency_detector import EmergencyDetector
 from src.config.settings import DEFAULT_PDF_PATH
 import time
@@ -45,9 +45,9 @@ def quick_system_integration_test():
     
     try:
         # 에이전트 초기화
-        print("🔧 에이전트 초기화 중...")
-        agent = VehicleManualAgent(str(DEFAULT_PDF_PATH))
-        print("✅ 초기화 완료")
+        print("🔧 SubGraph 에이전트 초기화 중...")
+        agent = VehicleManualAgentSubGraph(str(DEFAULT_PDF_PATH))
+        print("✅ SubGraph 에이전트 초기화 완료")
         
         # 운전자 실제 상황 테스트 케이스
         test_cases = [
@@ -109,7 +109,7 @@ def quick_performance_test():
     print("-" * 40)
     
     try:
-        agent = VehicleManualAgent(str(DEFAULT_PDF_PATH))
+        agent = VehicleManualAgentSubGraph(str(DEFAULT_PDF_PATH))
         
         # 간단한 성능 비교
         emergency_query = "엔진에서 연기가 나고 있어요!"
