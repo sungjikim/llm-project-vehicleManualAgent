@@ -41,8 +41,8 @@ local_chroma_db/
 faiss_index/
 
 # Data Files
-data/backup/*.pdf
-*.pdf
+# data/backup/*.pdf  # PDF files in data folder are now tracked
+# *.pdf  # PDF files are now tracked
 
 # Database Files
 *.db
