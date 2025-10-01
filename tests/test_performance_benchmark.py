@@ -8,7 +8,7 @@ import statistics
 from typing import List, Dict, Any
 from dataclasses import dataclass
 
-from src.agents.vehicle_agent_subgraph import VehicleManualAgentSubGraph
+from src.agents.vehicle_agent import VehicleManualAgent
 from src.utils.emergency_detector import EmergencyDetector
 from src.config.settings import DEFAULT_PDF_PATH
 
@@ -33,7 +33,7 @@ class PerformanceBenchmark:
     def __init__(self):
         """벤치마크 초기화"""
         print("🔧 성능 벤치마크 시스템 초기화 중...")
-        self.agent = VehicleManualAgentSubGraph(str(DEFAULT_PDF_PATH))
+        self.agent = VehicleManualAgent(str(DEFAULT_PDF_PATH))
         self.detector = EmergencyDetector()
         print("✅ SubGraph 벤치마크 시스템 준비 완료")
         

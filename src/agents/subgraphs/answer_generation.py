@@ -7,7 +7,7 @@ from langchain_openai import ChatOpenAI
 from langchain_core.output_parsers import StrOutputParser
 from langgraph.graph import StateGraph, START, END
 
-from ...models.subgraph_states import AnswerGenerationState
+from ...models.states import AnswerGenerationState
 from ...config.settings import DEFAULT_LLM_MODEL, DEFAULT_LLM_TEMPERATURE
 from ...prompts.templates import VehiclePromptTemplates
 from ...utils.answer_evaluator import AnswerEvaluator

@@ -6,7 +6,7 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from src.agents.vehicle_agent_subgraph import VehicleManualAgentSubGraph
+from src.agents.vehicle_agent import VehicleManualAgent
 from src.config.settings import DEFAULT_PDF_PATH
 
 
@@ -18,7 +18,7 @@ def test_speech_recognition():
     try:
         # 에이전트 초기화
         print("🔧 에이전트 초기화 중...")
-        agent = VehicleManualAgentSubGraph(str(DEFAULT_PDF_PATH))
+        agent = VehicleManualAgent(str(DEFAULT_PDF_PATH))
         print("✅ 에이전트 초기화 완료!")
         
         # 테스트 1: 텍스트 쿼리 (음성 인식 건너뛰기)

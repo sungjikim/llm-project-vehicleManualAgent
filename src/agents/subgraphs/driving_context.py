@@ -5,7 +5,7 @@
 from typing import Dict, Any
 from langgraph.graph import StateGraph, START, END
 
-from ...models.subgraph_states import DrivingContextState
+from ...models.states import DrivingContextState
 from ...utils.driving_context_detector import DrivingContextDetector
 from ...utils.llm_emergency_detector import LLMEmergencyDetector
 

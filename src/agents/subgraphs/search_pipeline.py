@@ -8,7 +8,7 @@ from langchain_openai import ChatOpenAI
 from langchain_core.output_parsers import StrOutputParser
 from langgraph.graph import StateGraph, START, END
 
-from ...models.subgraph_states import SearchPipelineState
+from ...models.states import SearchPipelineState
 from ...config.settings import DEFAULT_LLM_MODEL, DEFAULT_LLM_TEMPERATURE, DEFAULT_TOP_K
 from ...prompts.templates import VehiclePromptTemplates
 from ...tools.search_tools import (

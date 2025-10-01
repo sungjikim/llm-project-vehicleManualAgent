@@ -6,7 +6,7 @@ import unittest
 import time
 from typing import List, Dict, Any
 
-from src.agents.vehicle_agent_subgraph import VehicleManualAgentSubGraph
+from src.agents.vehicle_agent import VehicleManualAgent
 from src.utils.emergency_detector import EmergencyDetector
 from src.config.settings import DEFAULT_PDF_PATH
 
@@ -126,7 +126,7 @@ class TestEmergencySystemIntegration(unittest.TestCase):
     def setUpClass(cls):
         """클래스 레벨 설정 - 에이전트 한 번만 초기화"""
         print("\n🔧 테스트용 SubGraph 에이전트 초기화 중...")
-        cls.agent = VehicleManualAgentSubGraph(str(DEFAULT_PDF_PATH))
+        cls.agent = VehicleManualAgent(str(DEFAULT_PDF_PATH))
         print("✅ SubGraph 에이전트 초기화 완료")
     
     def test_emergency_response_quality(self):
@@ -220,7 +220,7 @@ class TestEmergencyPerformance(unittest.TestCase):
     def setUpClass(cls):
         """클래스 레벨 설정"""
         print("\n🔧 성능 테스트용 SubGraph 에이전트 초기화 중...")
-        cls.agent = VehicleManualAgentSubGraph(str(DEFAULT_PDF_PATH))
+        cls.agent = VehicleManualAgent(str(DEFAULT_PDF_PATH))
         print("✅ SubGraph 에이전트 초기화 완료")
     
     def test_emergency_response_time(self):

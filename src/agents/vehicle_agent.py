@@ -7,7 +7,7 @@ from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain.retrievers import EnsembleRetriever
 from langgraph.graph import StateGraph, END
 
-from ..models.subgraph_states import MainAgentState
+from ..models.states import MainAgentState
 from ..config.settings import (
     DEFAULT_LLM_MODEL, DEFAULT_LLM_TEMPERATURE, DEFAULT_TOP_K, WEIGHT_CONFIGS
 )
@@ -28,7 +28,7 @@ from .subgraphs import (
 )
 
 
-class VehicleManualAgentSubGraph:
+class VehicleManualAgent:
     """차량 매뉴얼 RAG 에이전트 - SubGraph 아키텍처"""
     
     def __init__(self, pdf_path: str):

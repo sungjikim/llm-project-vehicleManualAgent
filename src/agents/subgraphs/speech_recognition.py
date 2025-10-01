@@ -9,7 +9,7 @@ import wave
 import tempfile
 import os
 
-from ...models.subgraph_states import SpeechRecognitionState
+from ...models.states import SpeechRecognitionState
 
 
 class DummyASR:

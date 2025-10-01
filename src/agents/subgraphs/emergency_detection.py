@@ -5,7 +5,7 @@
 from typing import Dict, Any
 from langgraph.graph import StateGraph, START, END
 
-from ...models.subgraph_states import EmergencyDetectionState
+from ...models.states import EmergencyDetectionState
 from ...utils.emergency_detector import EmergencyDetector
 
 

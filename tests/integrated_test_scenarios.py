@@ -151,7 +151,7 @@ class IntegratedTestRunner:
     def initialize_agent(self):
         """SubGraph 에이전트 초기화"""
         try:
-            from src.agents.vehicle_agent_subgraph import VehicleManualAgentSubGraph
+            from src.agents.vehicle_agent import VehicleManualAgent
             from src.config.settings import DEFAULT_PDF_PATH
             from src.utils.callback_handlers import (
                 PerformanceMonitoringHandler,
@@ -160,7 +160,7 @@ class IntegratedTestRunner:
             )
             
             print("🔧 SubGraph 에이전트 초기화 중...")
-            self.agent = VehicleManualAgentSubGraph(str(DEFAULT_PDF_PATH))
+            self.agent = VehicleManualAgent(str(DEFAULT_PDF_PATH))
             
             # 콜백 핸들러 초기화
             performance_handler = PerformanceMonitoringHandler(enable_detailed_logging=False)

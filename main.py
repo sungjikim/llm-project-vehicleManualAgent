@@ -12,7 +12,7 @@ import argparse
 from pathlib import Path
 from typing import List, Tuple, Optional
 
-from src.agents.vehicle_agent_subgraph import VehicleManualAgentSubGraph
+from src.agents.vehicle_agent import VehicleManualAgent
 from src.config.settings import DEFAULT_PDF_PATH
 from src.utils.callback_handlers import (
     PerformanceMonitoringHandler,
@@ -435,7 +435,7 @@ def main():
         
         # 에이전트 초기화 (SubGraph 아키텍처)
         print("\n🔧 SubGraph 시스템 초기화 중...")
-        agent = VehicleManualAgentSubGraph(pdf_path)
+        agent = VehicleManualAgent(pdf_path)
         print("✅ SubGraph 시스템 준비 완료!")
         print("📊 성능 모니터링 활성화")
         print("🔔 실시간 알림 활성화")

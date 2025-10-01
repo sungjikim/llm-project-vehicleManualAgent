@@ -62,18 +62,18 @@ python main.py --help
 project/
 ├── src/                           # 소스 코드
 │   ├── agents/                    # 메인 에이전트
-│   │   ├── vehicle_agent_subgraph.py # SubGraph 아키텍처 에이전트
-│   │   └── subgraphs/             # SubGraph 모듈들
-│   │       ├── emergency_detection_subgraph.py    # 응급 상황 감지 SubGraph
-│   │       ├── search_pipeline_subgraph.py        # 검색 파이프라인 SubGraph
-│   │       ├── answer_generation_subgraph.py      # 답변 생성 SubGraph
-│   │       ├── driving_context_subgraph.py        # 주행 상황 처리 SubGraph
-│   │       └── speech_recognition_subgraph.py     # 음성 인식 SubGraph
+│   │   ├── vehicle_agent.py # 메인 에이전트
+│   │   └── subgraphs/             # 모듈화된 SubGraph들
+│   │       ├── emergency_detection.py    # 응급 상황 감지
+│   │       ├── search_pipeline.py        # 검색 파이프라인
+│   │       ├── answer_generation.py      # 답변 생성
+│   │       ├── driving_context.py        # 주행 상황 처리
+│   │       └── speech_recognition.py     # 음성 인식
 │   ├── config/                    # 설정 및 상수
 │   │   └── settings.py            # 시스템 설정값
 │   ├── models/                    # 데이터 모델
 │   │   ├── state.py               # LangGraph 상태 정의 (기존)
-│   │   └── subgraph_states.py     # SubGraph 상태 정의
+│   │   └── states.py     # 상태 정의
 │   ├── tools/                     # 검색 도구
 │   │   └── search_tools.py        # 다양한 검색 도구들
 │   ├── retrievers/                # 리트리버 관리자
@@ -90,7 +90,7 @@ project/
 │       ├── driving_context_detector.py # 주행 상황 감지 및 답변 압축
 │       └── callback_handlers.py   # 성능 모니터링
 ├── tests/                         # 테스트 코드
-│   ├── integrated_test_scenarios.py # 통합 테스트 시나리오 (SubGraph 기반)
+│   ├── integrated_test_scenarios.py # 통합 테스트 시나리오
 │   ├── test_emergency_system.py   # 응급 상황 시스템 테스트
 │   ├── test_performance_benchmark.py # 성능 벤치마크 테스트
 │   └── quick_test.py              # 빠른 테스트
@@ -206,13 +206,13 @@ python main.py --help
 - **🎤 음성 입력**: 음성 인식 기능 (더미 모드 지원)
 - **🗑️ 채팅 관리**: 채팅 히스토리 초기화 및 관리
 - **📱 반응형 디자인**: 모바일과 데스크톱 모두 지원
-- **🔧 시스템 정보**: SubGraph 아키텍처 및 기능 안내
+- **🔧 시스템 정보**: 아키텍처 및 기능 안내
 - **💡 사용법 가이드**: 내장된 사용법 안내 및 예시
 
 ### 5. 테스트 실행
 
 ```bash
-# 통합 테스트 (SubGraph 기반)
+# 통합 테스트
 python tests/integrated_test_scenarios.py --mode quick
 
 # 전체 테스트
@@ -235,15 +235,15 @@ SubGraph 아키텍처는 복잡한 LangGraph 워크플로우를 **재사용 가�
 ### 🏗️ **SubGraph 구조**
 
 ```
-메인 에이전트 (VehicleManualAgentSubGraph)
-├── 🚨 Emergency Detection SubGraph
+메인 에이전트 (VehicleManualAgent)
+├── 🚨 Emergency Detection 모듈
 │   └── emergency_classifier
-├── 🔍 Search Pipeline SubGraph  
+├── 🔍 Search Pipeline 모듈  
 │   ├── query_analyzer
 │   └── search_executor
-├── 📝 Answer Generation SubGraph
+├── 📝 Answer Generation 모듈
 │   └── answer_generator
-└── 🚗 Driving Context SubGraph
+└── 🚗 Driving Context 모듈
     └── driving_context_processor
 ```
 
@@ -315,10 +315,10 @@ python main.py --gradio
 ### 🔧 **프로그래밍 사용법**
 
 ```python
-from src.agents.vehicle_agent_subgraph import VehicleManualAgentSubGraph
+from src.agents.vehicle_agent import VehicleManualAgent
 
 # 에이전트 초기화
-agent = VehicleManualAgentSubGraph("path/to/your/manual.pdf")
+agent = VehicleManualAgent("path/to/your/manual.pdf")
 
 # 질문하기
 answer = agent.query("타이어 공기압은 얼마로 맞춰야 하나요?")
@@ -565,10 +565,10 @@ elif emergency_level == "HIGH":
 
 실제 차량 환경에서 **음성으로 질문**할 수 있는 확장 가능한 음성 인식 시스템입니다.
 
-### 🔧 **음성 인식 SubGraph 구조**
+### 🔧 **음성 인식 구조**
 
 ```
-Speech Recognition SubGraph
+음성 인식 모듈
 ├── audio_processor (DummyASR/STT)
 └── text_validator (텍스트 검증)
 ```
@@ -584,7 +584,7 @@ Speech Recognition SubGraph
 ### 🔄 **음성 인식 워크플로우**
 
 ```
-음성 입력 → 음성 인식 SubGraph → 텍스트 변환 → 기존 RAG 워크플로우
+음성 입력 → 음성 인식 모듈 → 텍스트 변환 → 기존 RAG 워크플로우
     ↓
 텍스트 입력 → 음성 인식 건너뛰기 → 기존 RAG 워크플로우
 ```
